@@ -1,63 +1,128 @@
 use std::path::PathBuf;
 use std::fs;
 use std::process::{ Command, Stdio, exit };
-use anyhow::{ Context, Result };
+use anyhow::Result;
 use rust_embed::RustEmbed;
 
-use crate::core::cli::{ UIDesign, CssPreset, Dependency, DependenciesMod };
+use crate::core::cli::{ FrameWork, UIDesign, CssPreset, Dependency, DependenciesMod, CodeLanguage };
 use crate::utils::logger;
+use crate::utils::error::{ handle_option, handle_result };
 use crate::core::package_json::{ update_pkg_basic, update_pkg_dependencies };
 
 pub struct InlineConfig {
+    pub frame: FrameWork,
     pub ui: UIDesign,
     pub css: CssPreset,
+    pub lang: CodeLanguage,
 }
 
 #[derive(RustEmbed)]
+#[folder = "common/"]
+struct Common;
+
+#[derive(RustEmbed)]
 #[folder = "react-template/"]
-struct Template;
+struct ReactTemplate;
+
+#[derive(RustEmbed)]
+#[folder = "react-template-ts/"]
+struct ReactTsTemplate;
+
+#[derive(Clone)]
+enum TemplateType {
+    ReactWebpack,
+    ReactTsWebpack,
+    Common,
+}
 
 // 项目初始化
 pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
     // 初始化项目路径
     let project_dir = PathBuf::from(project_name);
-    create_project_dir(&project_dir).context("创建项目目录失败")?;
+    create_project_dir(&project_dir)?;
 
-    for filename in Template::iter() {
-        copy_template_file(&project_dir, filename.as_ref())?;
-    }
+    let template_type = get_template_type(config.frame, config.lang);
+
+    // 复制特定模板文件
+    copy_template_files(&project_dir, template_type)?;
+
+    // 复制公共文件
+    copy_template_files(&project_dir, TemplateType::Common)?;
+
     logger::info("文件创建完成");
-    // 更新package.json
+    // 更新package.json基本信息
     update_pkg_basic(&project_dir, project_name.to_owned())?;
 
+    // 更新package.json依赖项
     add_dependencies(&project_dir, config.ui.get_dependencies(), DependenciesMod::Prod)?;
     add_dependencies(&project_dir, config.css.get_dependencies(), DependenciesMod::Dev)?;
 
     logger::info("预设依赖项添加完成");
     git_init(&project_dir)?;
+    logger::info("webpack模板内置自动生成路由插件，依赖安装完成直接启动即可");
+    logger::link_info("https://github.com/865713897/auto-route-plugin#readme");
     logger::ready("项目初始化完成");
     Ok(())
+}
+
+// 获取模板类型
+fn get_template_type(frame: FrameWork, lang: CodeLanguage) -> TemplateType {
+    match (frame, lang) {
+        (FrameWork::React, CodeLanguage::Js) => TemplateType::ReactWebpack,
+        (FrameWork::React, CodeLanguage::Ts) => TemplateType::ReactTsWebpack,
+    }
 }
 
 // 创建项目目录
 fn create_project_dir(project_dir: &PathBuf) -> Result<()> {
     logger::event("开始创建项目目录");
-    fs::create_dir(project_dir).context("创建项目目录失败")?;
+    handle_result(fs::create_dir(project_dir), "创建项目目录失败");
     logger::info("创建项目目录成功");
     Ok(())
 }
 
+// 复制模板文件
+fn copy_template_files(project_dir: &PathBuf, template_type: TemplateType) -> Result<()> {
+    let template_iter: Box<dyn Iterator<Item = std::borrow::Cow<'static, str>>> = match
+        template_type
+    {
+        TemplateType::ReactWebpack => Box::new(ReactTemplate::iter()),
+        TemplateType::ReactTsWebpack => Box::new(ReactTsTemplate::iter()),
+        TemplateType::Common => Box::new(Common::iter()),
+    };
+    for filename in template_iter {
+        copy_template_file(project_dir, filename.as_ref(), template_type.clone())?;
+    }
+    Ok(())
+}
+
 // 遍历template内部文件，并写入
-fn copy_template_file(project_dir: &PathBuf, filename: &str) -> Result<()> {
-    let file_content = Template::get(filename).context(
-        format!("获取模板文件内容失败: {}", filename)
-    )?;
+fn copy_template_file(
+    project_dir: &PathBuf,
+    filename: &str,
+    template_type: TemplateType
+) -> Result<()> {
+    let file_content = handle_option(
+        match template_type {
+            TemplateType::ReactWebpack => ReactTemplate::get(filename),
+            TemplateType::ReactTsWebpack => ReactTsTemplate::get(filename),
+            TemplateType::Common => Common::get(filename),
+        },
+        &format!("获取模板文件内容失败: {}", filename)
+    );
+
     let file_path = project_dir.join(filename);
-    let directory_path = file_path.parent().context("获取文件夹路径失败")?;
+    let directory_path = handle_option(file_path.parent(), "获取文件夹路径失败");
 
     logger::event(&format!("开始创建文件: {}", filename));
-    fs::create_dir_all(directory_path).context(format!("创建目录失败: {:?}", directory_path))?;
-    fs::write(&file_path, file_content.data).context(format!("写入文件失败: {:?}", file_path))?;
+    handle_result(
+        fs::create_dir_all(directory_path),
+        &format!("创建目录失败: {:?}", directory_path)
+    );
+    handle_result(
+        fs::write(&file_path, file_content.data),
+        &format!("写入文件失败: {:?}", file_path)
+    );
     Ok(())
 }
 
@@ -68,21 +133,18 @@ fn add_dependencies(
     dep_mod: DependenciesMod
 ) -> Result<()> {
     for dependency in dependencies {
-        update_pkg_dependencies(project_dir, dependency.name, dependency.version, dep_mod).context(
-            format!("添加依赖项失败: {} {}", dependency.name, dependency.version)
-        )?;
+        handle_result(
+            update_pkg_dependencies(project_dir, dependency.name, dependency.version, dep_mod),
+            &format!("添加依赖项失败: {} {}", dependency.name, dependency.version)
+        );
     }
     Ok(())
 }
 
 // 初始化git仓库
 fn git_init(project_dir: &PathBuf) -> Result<()> {
+    logger::event("git 初始化");
     run_git_command(project_dir, &["init"], "git 初始化失败")?;
-    logger::event("git init");
-    run_git_command(project_dir, &["add", "-A"], "git 暂存失败")?;
-    logger::event("git add -A");
-    run_git_command(project_dir, &["commit", "-m", "initial commit"], "git 提交失败")?;
-    logger::event("git commit -m 'initial commit'");
     logger::info("git 初始化完成");
     Ok(())
 }

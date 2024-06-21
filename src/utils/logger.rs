@@ -19,3 +19,7 @@ pub fn select_msg(msg: &str) {
 pub fn event(msg: &str) {
     println!("{}  - {}", style("event").color256(177), msg);
 }
+
+pub fn link_info(msg: &str) {
+    println!("{}   - {}", style("link").color256(33), style(msg).color256(33).underlined());
+}
