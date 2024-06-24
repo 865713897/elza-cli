@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::process::exit;
 use console::Style;
 use clap::ValueEnum;
+use crate::utils::check::get_current_version;
 use dialoguer::{ console::{ style, Term }, theme::ColorfulTheme, Select };
 
 use crate::core::build;
@@ -81,6 +82,16 @@ pub fn create_project(
         logger::error(&format!("创建失败: {:#?} 已经存在！", &project_name));
         return Ok(());
     }
+
+    let current_version = get_current_version()?;
+    logger::info(
+        &format!(
+            "{}{}",
+            style("elza-cli v").color256(14).bold(),
+            style(current_version).color256(14).bold()
+        )
+    );
+
     logger::info("开始预设项目...");
 
     let frame = select_frame_work(fame_work)?;
@@ -97,10 +108,6 @@ fn select_frame_work(fame_work: Option<FrameWork>) -> Result<FrameWork> {
     match fame_work {
         Some(fame) => Ok(fame),
         None => {
-            // if cli_mode {
-            //     logger::error("请指定框架");
-            //     exit(1);
-            // }
             logger::select_msg("请选择项目框架");
 
             let items = vec!["react", "vue"];
@@ -109,7 +116,7 @@ fn select_frame_work(fame_work: Option<FrameWork>) -> Result<FrameWork> {
                 0 => Ok(FrameWork::React),
                 // 1 => Ok(FrameWork::Vue),
                 _ => {
-                    logger::error("未指定的框架");
+                    logger::error("暂不支持");
                     exit(1)
                 }
             }
@@ -134,7 +141,7 @@ fn select_language(language: Option<CodeLanguage>) -> Result<CodeLanguage> {
                 0 => Ok(CodeLanguage::Ts),
                 1 => Ok(CodeLanguage::Js),
                 _ => {
-                    logger::error("未指定的语言");
+                    logger::error("暂不支持");
                     exit(1);
                 }
             }
@@ -147,10 +154,6 @@ fn select_ui_library(ui_design: Option<UIDesign>) -> Result<UIDesign> {
     match ui_design {
         Some(ui) => Ok(ui),
         None => {
-            // if cli_mode {
-            //     logger::error("请指定UI库");
-            //     exit(1);
-            // }
             logger::select_msg("请选择UI库");
 
             let items = vec!["antd", "element-plus"];
@@ -159,7 +162,7 @@ fn select_ui_library(ui_design: Option<UIDesign>) -> Result<UIDesign> {
                 0 => Ok(UIDesign::Antd),
                 1 => Ok(UIDesign::ElementPlus),
                 _ => {
-                    logger::error("未指定的UI库");
+                    logger::error("暂不支持");
                     exit(1)
                 }
             }
@@ -172,10 +175,6 @@ fn select_css_preset(css_preset: Option<CssPreset>) -> Result<CssPreset> {
     match css_preset {
         Some(css) => Ok(css),
         None => {
-            // if cli_mode {
-            //     logger::error("请指定CSS预设");
-            //     exit(1);
-            // }
             logger::select_msg("请选择CSS预设");
 
             let items: Vec<&str> = vec!["sass", "less"];
@@ -184,7 +183,7 @@ fn select_css_preset(css_preset: Option<CssPreset>) -> Result<CssPreset> {
                 0 => Ok(CssPreset::Sass),
                 1 => Ok(CssPreset::Less),
                 _ => {
-                    logger::error("未指定的CSS预设");
+                    logger::error("暂不支持");
                     exit(1)
                 }
             }

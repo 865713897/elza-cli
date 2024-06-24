@@ -1,8 +1,7 @@
 mod utils;
 mod core;
-
 use anyhow::{ Ok, Result };
-use clap::{ builder::{ EnumValueParser, ValueHint }, Parser, Subcommand };
+use clap::{ builder::{ EnumValueParser, ValueHint }, CommandFactory, Parser, Subcommand };
 use crate::utils::logger;
 use crate::core::cli;
 
@@ -11,18 +10,12 @@ use crate::core::cli;
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
-
-    #[arg(help = "可选参数，用于指定新项目的名称", value_hint = ValueHint::DirPath)]
-    name: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
     // 创建一个新项目
     Create {
-        #[arg(short = 'c', long = "cli", help = "通过命令行参数直接生成")]
-        cli_mode: bool,
-
         #[arg(help = "项目名称", value_hint = ValueHint::DirPath)]
         name: String,
 
@@ -74,26 +67,15 @@ fn main() -> Result<()> {
         // 如果匹配到了字段
         Some(command) => {
             match command {
-                Commands::Create { cli_mode: _, name, fame_work, language, ui_design, css_preset } => {
+                Commands::Create { name, fame_work, language, ui_design, css_preset } => {
                     // 执行创建项目的逻辑
-                    cli::create_project(
-                        name,
-                        fame_work,
-                        ui_design,
-                        css_preset,
-                        language
-                    )?;
+                    cli::create_project(name, fame_work, ui_design, css_preset, language)?;
                 }
             }
         }
         None => {
-            match _cli.name {
-                Some(name) => {
-                    // 执行其他逻辑
-                    println!("其他逻辑: {}", name);
-                }
-                None => logger::error("请提供项目名称！"),
-            }
+            Cli::command().print_help()?;
+            std::process::exit(0); // 显示帮助信息后退出
         }
     }
     Ok(())
