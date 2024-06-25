@@ -1,15 +1,15 @@
 use console::style;
 
 pub fn error(msg: &str) {
-    println!("{}  - {}", style("error").red(), msg);
+    println!("{} - {}", style("error").red(), msg);
 }
 
 pub fn info(msg: &str) {
-    println!("{}   - {}", style("info").cyan(), msg)
+    println!("{}  - {}", style("info").cyan(), msg)
 }
 
 pub fn ready(msg: &str) {
-    println!("{}  - {}", style("ready").green(), msg);
+    println!("{} - {}", style("ready").green(), msg);
 }
 
 pub fn select_msg(msg: &str) {
@@ -17,11 +17,11 @@ pub fn select_msg(msg: &str) {
 }
 
 pub fn event(msg: &str) {
-    println!("{}  - {}", style("event").color256(177), msg);
+    println!("{} - {}", style("event").color256(177), msg);
 }
 
 pub fn link_info(msg: &str) {
-    println!("{}   - {}", style("link").color256(33), style(msg).color256(33).underlined());
+    println!("{}  - {}", style("link").color256(33), style(msg).color256(33).underlined());
 }
 
 pub fn warn(msg: &str) {

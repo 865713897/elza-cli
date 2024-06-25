@@ -3,11 +3,16 @@
 const path = require('path');
 const childProcess = require('child_process');
 
-// 存储所有平台和二进制分发包的查找表
-const BINARY_DISTRIBUTION_PACKAGES = {
-  'darwin-arm64': '@elza-cli/darwin-arm64',
-  'win32-x64': '@elza-cli/win32-x64',
-};
+// 平台-二进制文件对照表
+const optionalDependencies = require('./package.json').optionalDependencies;
+const BINARY_DISTRIBUTION_PACKAGES = Object.keys(optionalDependencies).reduce(
+  (pre, dep) => {
+    const key = dep.replace('@elza-cli/', '');
+    pre[key] = dep;
+    return pre;
+  },
+  {}
+);
 
 // Windows平台的二进制文件以.exe结尾，因此需要特殊处理
 const binaryName = process.platform === 'win32' ? 'elza-cli.exe' : 'elza-cli';

@@ -2,15 +2,21 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const https = require('https');
+const logger = require('./logger');
 
 // 平台-二进制文件对照表
-const BINARY_DISTRIBUTION_PACKAGES = {
-  'darwin-arm64': '@elza-cli/darwin-arm64',
-  'win32-x64': '@elza-cli/win32-x64',
-};
+const optionalDependencies = require('./package.json').optionalDependencies;
+const BINARY_DISTRIBUTION_PACKAGES = Object.keys(optionalDependencies).reduce(
+  (pre, dep) => {
+    const key = dep.replace('@elza-cli/', '');
+    pre[key] = dep;
+    return pre;
+  },
+  {}
+);
 
 // 安装版本
-const BINARY_DISTRIBUTION_VERSION = require('./package.json').version;
+const CURRENT_VERSION = require('./package.json').version;
 
 // 处理windows平台文件结尾
 const binaryName = process.platform === 'win32' ? 'elza-cli.exe' : 'elza-cli';
@@ -78,26 +84,44 @@ function extractFileFromTarball(tarballBuffer, filepath) {
 }
 
 // 下载二进制文件
-async function downloadBinary() {
+async function downloadBinary(version) {
   try {
     const packageName = platformBinaryName.replace('@elza-cli/', '');
     const tarballDownloadBuffer = await makeRequest(
-      `https://registry.npmjs.org/${platformBinaryName}/-/${packageName}-${BINARY_DISTRIBUTION_VERSION}.tgz`
+      `https://registry.npmjs.org/${platformBinaryName}/-/${packageName}-${version}.tgz`
     );
-
+    logger.info('二进制文件下载完成');
+    logger.event('开始解压二进制文件');
     const tarballBuffer = zlib.unzipSync(tarballDownloadBuffer);
-
+    logger.info('二进制文件解压完成');
     const binaryBuffer = extractFileFromTarball(
       tarballBuffer,
       `package/bin/${binaryName}`
     );
-
     fs.writeFileSync(fallbackBinaryPath, binaryBuffer, { mode: 0o755 });
-
-    console.log('二进制文件下载并解压成功');
+    logger.ready('已完成下载');
   } catch (error) {
-    console.error('二进制文件下载失败:', error.message);
+    logger.error(`二进制文件下载失败: ${error.message}`);
     process.exit(1);
+  }
+}
+
+// 获取最新版本
+async function getLatestVersion(packageName) {
+  const url = `https://registry.npmjs.org/${packageName}`;
+  const data = await makeRequest(url);
+  const packageInfo = JSON.parse(data.toString('utf8'));
+  return packageInfo['dist-tags'].latest;
+}
+
+// 检查并下载新版本
+async function checkAndUpdate() {
+  const latestVersion = await getLatestVersion(platformBinaryName);
+  if (latestVersion !== CURRENT_VERSION) {
+    logger.info_version(`发现新版本 v${latestVersion}`);
+    await downloadBinary(latestVersion);
+  } else {
+    logger.ready('已是最新版本');
   }
 }
 
@@ -118,21 +142,11 @@ if (!platformBinaryName) {
 
 // 如果已经安装过，直接使用
 if (!isPlatformSpecificPackageInstalled()) {
-  console.log('未找到平台特定软件包，将手动下载二进制文件');
-  downloadBinary()
-    .then(() => {
-      console.log('二进制文件下载并解压成功');
-    })
-    .catch((error) => {
-      console.error('二进制文件下载失败:', error.message);
-    });
+  logger.info('平台未检测到软件包');
+  logger.event('开始下载二进制文件...');
+  downloadBinary(CURRENT_VERSION);
 } else {
-  console.log('平台特定的软件包已安装。将回退到手动下载二进制文件');
-  downloadBinary()
-    .then(() => {
-      console.log('二进制文件下载并解压成功');
-    })
-    .catch((error) => {
-      console.error('二进制文件下载失败:', error.message);
-    });
+  logger.info('平台已检测到软件包');
+  logger.event('开始检查更新...');
+  checkAndUpdate();
 }

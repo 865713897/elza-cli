@@ -5,7 +5,7 @@ import HtmlWebpackPlugin from 'html-webpack-plugin';
 import CopyPlugin from 'copy-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import WebpackBar from 'webpackbar';
-import AutoRoutePlugin from '@elza/auto-route-plugin';
+import AutoRoutePlugin from '@elzajs/auto-route-plugin';
 
 interface WebpackDevServerConfiguration {
   devServer?: DevServerConfiguration;

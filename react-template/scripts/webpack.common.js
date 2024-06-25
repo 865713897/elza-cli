@@ -2,7 +2,7 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const AutoRoutePlugin = require('@elza/auto-route-plugin');
+const AutoRoutePlugin = require('@elzajs/auto-route-plugin');
 const WebpackBar = require('webpackbar');
 
 const isDev = process.env.NODE_ENV === 'development';
