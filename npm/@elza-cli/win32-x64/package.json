@@ -1,0 +1,16 @@
+{
+  "name": "@elza-cli/win32-x64",
+  "version": "1.0.7",
+  "description": "The Windows 64-bit binary for elza-cli",
+  "keywords": [
+    "elza-cli",
+    "windows"
+  ],
+  "license": "MIT",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ]
+}

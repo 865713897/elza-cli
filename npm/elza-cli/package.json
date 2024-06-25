@@ -1,0 +1,15 @@
+{
+  "name": "elza-cli",
+  "version": "1.0.7",
+  "description": "elza-cli",
+  "scripts": {
+    "postinstall": "node ./install.js"
+  },
+  "bin": {
+    "elza-cli": "bin/cli.js"
+  },
+  "optionalDependencies": {
+    "@elza-cli/darwin-arm64": "1.0.7",
+    "@elza-cli/win32-x64": "1.0.7"
+  }
+}
