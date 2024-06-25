@@ -15,6 +15,21 @@ type WebpackConfiguration = Configuration & WebpackDevServerConfiguration;
 
 const isDev: boolean = process.env.NODE_ENV === 'development';
 
+const getStyleLoader = (openCssModule = false) => {
+  const loader: any = ['style-loader', 'css-loader', 'postcss-loader', 'sass-loader'];
+  if (openCssModule) {
+    loader[1] = {
+      loader: 'css-loader',
+      options: {
+        modules: {
+          localIdentName: '[name]__[local]-[hash:base64:5]',
+        },
+      },
+    };
+  }
+  return loader;
+};
+
 const filename: string = isDev ? '[name].js' : 'static/js/[name].[chunkhash:8].js';
 
 const baseConfig: WebpackConfiguration = {
@@ -56,11 +71,14 @@ const baseConfig: WebpackConfiguration = {
       },
       {
         test: /\.scss$/,
-        use: [
-          isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
-          'css-loader',
-          'postcss-loader',
-          'sass-loader',
+        oneOf: [
+          {
+            resourceQuery: /css_modules/,
+            use: getStyleLoader(true),
+          },
+          {
+            use: getStyleLoader(false),
+          },
         ],
         exclude: /node_modules/,
       },

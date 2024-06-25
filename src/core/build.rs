@@ -57,6 +57,9 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
     add_dependencies(&project_dir, config.ui.get_dependencies(), DependenciesMod::Prod)?;
     add_dependencies(&project_dir, config.css.get_dependencies(), DependenciesMod::Dev)?;
 
+    // 根据ui选项更新webpack rules
+    handle_result(update_webpack_rules(&project_dir, config), "更新webpack rules失败");
+
     logger::info("预设依赖项添加完成");
     git_init(&project_dir)?;
     logger::info("webpack模板内置自动生成路由插件，依赖安装完成直接启动即可");
@@ -161,5 +164,25 @@ fn run_git_command(project_dir: &PathBuf, args: &[&str], error_msg: &str) -> Res
         logger::error(error_msg);
         exit(1);
     }
+    Ok(())
+}
+
+// 更新webpack rules
+fn update_webpack_rules(project_dir: &PathBuf, config: InlineConfig) -> Result<()> {
+    let InlineConfig { ui: _, lang, frame: _, css } = config;
+
+    let mut path = project_dir.clone();
+    match lang {
+        CodeLanguage::Ts => path.push("scripts/webpack.common.ts"),
+        CodeLanguage::Js => path.push("scripts/webpack.common.js"),
+    }
+
+    let mut content = fs::read_to_string(&path).unwrap();
+
+    if css == CssPreset::Less {
+        content = content.replace("sass-loader", "less-loader").replace("scss", "less");
+        fs::write(&path, content).unwrap();
+    }
+
     Ok(())
 }
