@@ -1,15 +1,17 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { exec } = require('child_process');
+const { logger } = require('./logger');
 
 const npmDir = './npm'; // 定义npm包的目录
 
 async function publishPackage(dirPath) {
   try {
+    logger.event(`${dirPath} -> npm publish --access public`);
     await execPromise('npm publish --access public', { cwd: dirPath });
-    console.log(`Published ${dirPath}`);
+    logger.ready(`发布 ${dirPath} 完成`);
   } catch (error) {
-    console.error(`Failed to publish ${dirPath}: ${error.message}`);
+    logger.error(`发布 ${dirPath} 失败: ${error.message}`);
   }
 }
 
@@ -28,7 +30,6 @@ function execPromise(command, options) {
 async function findAndPublishPackages(dirPath) {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
-
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
       if (entry.isDirectory()) {
@@ -42,10 +43,11 @@ async function findAndPublishPackages(dirPath) {
       }
     }
   } catch (error) {
-    console.error(`Error reading directory ${dirPath}: ${error.message}`);
+    logger.error(`读取 ${dirPath} 失败: ${error.message}`);
   }
 }
 
-findAndPublishPackages(npmDir).catch(error => {
-  console.error(`Failed to process ${npmDir}: ${error.message}`);
+logger.info('开始发布npm包...');
+findAndPublishPackages(npmDir).catch((error) => {
+  logger.error(`处理 ${npmDir} :`, error.message);
 });

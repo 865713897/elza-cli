@@ -1,6 +1,6 @@
 {
   "name": "@elza-cli/darwin-arm64",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "The macOS ARM 64-bit binary for elza-cli",
   "keywords": [
     "elza-cli",

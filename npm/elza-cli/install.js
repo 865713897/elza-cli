@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const https = require('https');
-const logger = require('./logger');
+const { logger } = require('./logger');
 
 // 平台-二进制文件对照表
 const optionalDependencies = require('./package.json').optionalDependencies;

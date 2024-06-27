@@ -68,9 +68,6 @@ const logger = {
   error: (msg) => console.log(`${style('error').red()} - ${msg}`),
   ready: (msg) => console.log(`${style('ready').green()} - ${msg}`),
   warn: (msg) => console.log(`${style('warn').yellow()}  - ${msg}`),
-  info_version: (msg) => {
-    console.log(`${style('info').cyan()}  - ${style(msg).color256(14).bold()}`);
-  },
 };
 
 module.exports = { logger, style };

@@ -23,7 +23,3 @@ pub fn event(msg: &str) {
 pub fn link_info(msg: &str) {
     println!("{}  - {}", style("link").color256(33), style(msg).color256(33).underlined());
 }
-
-pub fn warn(msg: &str) {
-    println!("{}  - {}", style("warn").color256(226), msg);
-}

@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use std::process::exit;
 use console::Style;
 use clap::ValueEnum;
-use crate::utils::check::get_current_version;
 use dialoguer::{ console::{ style, Term }, theme::ColorfulTheme, Select };
 
 use crate::core::build;
@@ -83,7 +82,7 @@ pub fn create_project(
         return Ok(());
     }
 
-    let current_version = get_current_version()?;
+    let current_version = env!("CARGO_PKG_VERSION");
     logger::info(
         &format!(
             "{}{}",
