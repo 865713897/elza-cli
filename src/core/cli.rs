@@ -26,6 +26,21 @@ pub enum FrameWork {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
+pub enum StateManagement {
+    Zustand,
+    None,
+}
+
+impl StateManagement {
+    pub fn get_dependencies(&self) -> Vec<Dependency> {
+        match self {
+            StateManagement::Zustand => vec![Dependency { name: "zustand", version: "^4.5.4" }],
+            StateManagement::None => vec![],
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum CodeLanguage {
     Js,
     Ts,
@@ -94,11 +109,12 @@ pub fn create_project(
     logger::info("开始预设项目...");
 
     let frame = select_frame_work(fame_work)?;
+    let state = select_state()?;
     let lang = select_language(language)?;
     let ui = select_ui_library(ui_design)?;
     let css = select_css_preset(css_preset)?;
 
-    build::start(project_name.as_str(), build::InlineConfig { ui, css, frame, lang })?;
+    build::start(project_name.as_str(), build::InlineConfig { ui, css, frame, lang, state })?;
     Ok(())
 }
 
@@ -116,9 +132,24 @@ fn select_frame_work(fame_work: Option<FrameWork>) -> Result<FrameWork> {
                 // 1 => Ok(FrameWork::Vue),
                 _ => {
                     logger::error("暂不支持");
-                    exit(1)
+                    exit(1);
                 }
             }
+        }
+    }
+}
+
+// 状态管理器
+fn select_state() -> Result<StateManagement> {
+    logger::select_msg("请选择状态管理器");
+    let items = vec!["zustand", "跳过"];
+    let selection = select_from_list(&items, 0).context("选择状态管理器失败")?;
+    match selection {
+        0 => Ok(StateManagement::Zustand),
+        1 => Ok(StateManagement::None),
+        _ => {
+            logger::error("暂不支持");
+            exit(1);
         }
     }
 }
@@ -128,10 +159,6 @@ fn select_language(language: Option<CodeLanguage>) -> Result<CodeLanguage> {
     match language {
         Some(lang) => Ok(lang),
         None => {
-            // if cli_mode {
-            //     logger::error("请指定语言");
-            //     exit(1);
-            // }
             logger::select_msg("请选择语言");
 
             let items = vec!["typescript", "javascript"];

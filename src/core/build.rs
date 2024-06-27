@@ -4,13 +4,22 @@ use std::process::{ Command, Stdio, exit };
 use anyhow::Result;
 use rust_embed::RustEmbed;
 
-use crate::core::cli::{ FrameWork, UIDesign, CssPreset, Dependency, DependenciesMod, CodeLanguage };
+use crate::core::cli::{
+    FrameWork,
+    UIDesign,
+    CssPreset,
+    Dependency,
+    DependenciesMod,
+    CodeLanguage,
+    StateManagement,
+};
 use crate::utils::logger;
 use crate::utils::error::{ handle_option, handle_result };
 use crate::core::package_json::{ update_pkg_basic, update_pkg_dependencies };
 
 pub struct InlineConfig {
     pub frame: FrameWork,
+    pub state: StateManagement,
     pub ui: UIDesign,
     pub css: CssPreset,
     pub lang: CodeLanguage,
@@ -55,6 +64,7 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
 
     // 更新package.json依赖项
     add_dependencies(&project_dir, config.ui.get_dependencies(), DependenciesMod::Prod)?;
+    add_dependencies(&project_dir, config.state.get_dependencies(), DependenciesMod::Prod)?;
     add_dependencies(&project_dir, config.css.get_dependencies(), DependenciesMod::Dev)?;
 
     // 根据ui选项更新webpack rules
@@ -169,7 +179,7 @@ fn run_git_command(project_dir: &PathBuf, args: &[&str], error_msg: &str) -> Res
 
 // 更新webpack rules
 fn update_webpack_rules(project_dir: &PathBuf, config: InlineConfig) -> Result<()> {
-    let InlineConfig { ui: _, lang, frame: _, css } = config;
+    let InlineConfig { ui: _, lang, frame: _, css, state: _ } = config;
 
     let mut path = project_dir.clone();
     match lang {
