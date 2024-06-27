@@ -4,7 +4,7 @@ const path = require('path');
 const childProcess = require('child_process');
 
 // 平台-二进制文件对照表
-const optionalDependencies = require('./package.json').optionalDependencies;
+const optionalDependencies = require('../package.json').optionalDependencies;
 const BINARY_DISTRIBUTION_PACKAGES = Object.keys(optionalDependencies).reduce(
   (pre, dep) => {
     const key = dep.replace('@elza-cli/', '');
