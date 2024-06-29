@@ -2,7 +2,7 @@
   "name": "elza-demo",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "",
   "scripts": {
     "start": "cross-env NODE_ENV=development webpack-dev-server --config ./scripts/webpack.dev.js",
     "build": "cross-env NODE_ENV=production webpack --config ./scripts/webpack.prod.js"

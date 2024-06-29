@@ -3,12 +3,26 @@ use serde_json::{ Value, Map };
 use std::fs;
 use std::path::PathBuf;
 use crate::logger;
-use crate::cli::DependenciesMod;
+use super::cli::DependenciesMod;
+use super::lang::CodeLanguage;
 
 pub fn update_pkg_basic(project_dir: &PathBuf, project_name: String) -> Result<()> {
     let mut json = read_package_json(project_dir)?;
     json.as_object_mut().unwrap().insert("name".to_string(), Value::String(project_name));
     write_package_json(project_dir, &json)
+}
+
+pub fn update_pkg_scripts(project_dir: &PathBuf, lang: CodeLanguage) -> Result<()> {
+    let mut path = project_dir.clone();
+    path.push("package.json");
+    let mut content = fs::read_to_string(&path).unwrap();
+
+    if lang == CodeLanguage::Ts {
+        content = content.replace(".js", ".ts");
+        fs::write(&path, content).unwrap();
+    };
+
+    Ok(())
 }
 
 pub fn update_pkg_dependencies(

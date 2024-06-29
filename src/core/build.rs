@@ -7,7 +7,7 @@ use rust_embed::RustEmbed;
 use crate::core::cli::Dependency;
 use crate::utils::logger;
 use crate::utils::error::{ handle_option, handle_result };
-use crate::core::package_json::{ update_pkg_basic, update_pkg_dependencies, sort_package_json };
+use crate::core::package_json::{ update_pkg_basic, update_pkg_scripts, update_pkg_dependencies, sort_package_json };
 
 use super::frame::FrameWork;
 use super::state::StateManagement;
@@ -60,14 +60,16 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
 
     // 更新package.json基本信息
     update_pkg_basic(&project_dir, project_name.to_owned())?;
+    update_pkg_scripts(&project_dir, config.lang)?;
 
     // 更新package.json依赖项
-    let frame_deps = config.frame.get_dependencies();
-    let state_deps = config.state.get_dependencies();
-    let lang_deps = config.lang.get_dependencies();
-    let ui_deps = config.ui.get_dependencies();
-    let css_deps = config.css.get_dependencies();
-    let deps = vec![frame_deps, state_deps, lang_deps, ui_deps, css_deps];
+    let deps = vec![
+        config.frame.get_dependencies(),
+        config.state.get_dependencies(),
+        config.lang.get_dependencies(),
+        config.ui.get_dependencies(),
+        config.css.get_dependencies()
+    ];
     let flatten_deps: Vec<Dependency> = deps.into_iter().flatten().collect();
     add_dependencies(&project_dir, flatten_deps)?;
 
