@@ -1,5 +1,5 @@
 use anyhow::Result;
-use serde_json::Value;
+use serde_json::{ Value, Map };
 use std::fs;
 use std::path::PathBuf;
 use crate::logger;
@@ -56,3 +56,43 @@ fn write_package_json(project_dir: &PathBuf, json: &Value) -> Result<()> {
     Ok(())
 }
 
+pub fn sort_package_json(project_dir: &PathBuf) -> Result<()> {
+    let mut json = read_package_json(project_dir)?;
+    sort_json(&mut json);
+    write_package_json(project_dir, &json)
+}
+
+fn sort_json(json_value: &mut Value) {
+    match json_value {
+        Value::Object(map) => {
+            // 针对dependencies和devDependencies进行排序
+            if let Some(dependencies) = map.get_mut("dependencies") {
+                sort_map(dependencies);
+            }
+            if let Some(dev_dependencies) = map.get_mut("devDependencies") {
+                sort_map(dev_dependencies);
+            }
+        }
+        Value::Array(array) => {
+            for value in array {
+                sort_json(value);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn sort_map(json_value: &mut Value) {
+    if let Value::Object(map) = json_value {
+        let mut sorted_map = Map::new();
+        let mut keys: Vec<_> = map.keys().collect();
+        keys.sort();
+        for key in keys {
+            let value = map.get(key).unwrap().clone();
+            let mut sorted_value = value.clone();
+            sort_json(&mut sorted_value);
+            sorted_map.insert(key.clone(), sorted_value);
+        }
+        *map = sorted_map;
+    }
+}

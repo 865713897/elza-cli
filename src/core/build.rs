@@ -4,18 +4,16 @@ use std::process::{ Command, Stdio, exit };
 use anyhow::Result;
 use rust_embed::RustEmbed;
 
-use crate::core::cli::{
-    FrameWork,
-    UIDesign,
-    CssPreset,
-    Dependency,
-    DependenciesMod,
-    CodeLanguage,
-    StateManagement,
-};
+use crate::core::cli::Dependency;
 use crate::utils::logger;
 use crate::utils::error::{ handle_option, handle_result };
-use crate::core::package_json::{ update_pkg_basic, update_pkg_dependencies };
+use crate::core::package_json::{ update_pkg_basic, update_pkg_dependencies, sort_package_json };
+
+use super::frame::FrameWork;
+use super::state::StateManagement;
+use super::lang::CodeLanguage;
+use super::ui::UIDesign;
+use super::css::CssPreset;
 
 pub struct InlineConfig {
     pub frame: FrameWork,
@@ -59,13 +57,22 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
     copy_template_files(&project_dir, TemplateType::Common)?;
 
     logger::info("文件创建完成");
+
     // 更新package.json基本信息
     update_pkg_basic(&project_dir, project_name.to_owned())?;
 
     // 更新package.json依赖项
-    add_dependencies(&project_dir, config.ui.get_dependencies(), DependenciesMod::Prod)?;
-    add_dependencies(&project_dir, config.state.get_dependencies(), DependenciesMod::Prod)?;
-    add_dependencies(&project_dir, config.css.get_dependencies(), DependenciesMod::Dev)?;
+    let frame_deps = config.frame.get_dependencies();
+    let state_deps = config.state.get_dependencies();
+    let lang_deps = config.lang.get_dependencies();
+    let ui_deps = config.ui.get_dependencies();
+    let css_deps = config.css.get_dependencies();
+    let deps = vec![frame_deps, state_deps, lang_deps, ui_deps, css_deps];
+    let flatten_deps: Vec<Dependency> = deps.into_iter().flatten().collect();
+    add_dependencies(&project_dir, flatten_deps)?;
+
+    // 更新package.json依赖项排序
+    sort_package_json(&project_dir)?;
 
     // 根据ui选项更新webpack rules
     handle_result(update_webpack_rules(&project_dir, config), "更新webpack rules失败");
@@ -140,14 +147,15 @@ fn copy_template_file(
 }
 
 // 添加依赖项目
-fn add_dependencies(
-    project_dir: &PathBuf,
-    dependencies: Vec<Dependency>,
-    dep_mod: DependenciesMod
-) -> Result<()> {
+fn add_dependencies(project_dir: &PathBuf, dependencies: Vec<Dependency>) -> Result<()> {
     for dependency in dependencies {
         handle_result(
-            update_pkg_dependencies(project_dir, dependency.name, dependency.version, dep_mod),
+            update_pkg_dependencies(
+                project_dir,
+                dependency.name,
+                dependency.version,
+                dependency.mod_type
+            ),
             &format!("添加依赖项失败: {} {}", dependency.name, dependency.version)
         );
     }
