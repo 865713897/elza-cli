@@ -3,8 +3,7 @@ use serde_json::{ Value, Map };
 use std::fs;
 use std::path::PathBuf;
 use crate::logger;
-use super::cli::DependenciesMod;
-use super::lang::CodeLanguage;
+use super::cli::{ DependenciesMod, CodeLanguage };
 
 pub fn update_pkg_basic(project_dir: &PathBuf, project_name: String) -> Result<()> {
     let mut json = read_package_json(project_dir)?;
@@ -20,7 +19,7 @@ pub fn update_pkg_scripts(project_dir: &PathBuf, lang: CodeLanguage) -> Result<(
     if lang == CodeLanguage::Ts {
         content = content.replace(".js", ".ts");
         fs::write(&path, content).unwrap();
-    };
+    }
 
     Ok(())
 }

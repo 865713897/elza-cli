@@ -8,7 +8,12 @@ const WebpackBar = require('webpackbar');
 const isDev = process.env.NODE_ENV === 'development';
 
 const getStyleLoader = (openCssModule = false) => {
-  const loader = ['style-loader', 'css-loader', 'postcss-loader', 'sass-loader'];
+  const loader = [
+    isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
+    'css-loader',
+    'postcss-loader',
+    'sass-loader',
+  ];
   if (openCssModule) {
     loader[1] = {
       loader: 'css-loader',
@@ -58,7 +63,11 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: ['style-loader', 'css-loader', 'postcss-loader'],
+        use: [
+          isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
+          'css-loader',
+          'postcss-loader',
+        ],
       },
       {
         test: /\.scss$/,
@@ -99,7 +108,11 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, '../public/index.html'),
     }),
-    new AutoRoutePlugin({ routingMode: 'hash', onlyRoutes: false, indexPath: '/home' }),
+    new AutoRoutePlugin({
+      routingMode: 'hash',
+      onlyRoutes: false,
+      indexPath: '/home',
+    }),
     new CopyPlugin({
       patterns: [
         {

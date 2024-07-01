@@ -4,16 +4,16 @@ use std::process::{ Command, Stdio, exit };
 use anyhow::Result;
 use rust_embed::RustEmbed;
 
-use crate::core::cli::Dependency;
 use crate::utils::logger;
 use crate::utils::error::{ handle_option, handle_result };
-use crate::core::package_json::{ update_pkg_basic, update_pkg_scripts, update_pkg_dependencies, sort_package_json };
 
-use super::frame::FrameWork;
-use super::state::StateManagement;
-use super::lang::CodeLanguage;
-use super::ui::UIDesign;
-use super::css::CssPreset;
+use super::package_json::{
+    update_pkg_basic,
+    update_pkg_scripts,
+    update_pkg_dependencies,
+    sort_package_json,
+};
+use super::cli::{ Dependency, FrameWork, StateManagement, CodeLanguage, UIDesign, CssPreset };
 
 pub struct InlineConfig {
     pub frame: FrameWork,
@@ -81,8 +81,9 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
 
     logger::info("预设依赖项添加完成");
     git_init(&project_dir)?;
-    logger::info("webpack模板内置自动生成路由插件，依赖安装完成直接启动即可");
-    logger::link_info("https://github.com/865713897/auto-route-plugin#readme");
+    logger::full_info(
+        "[你知道吗？] webpack模板内置自动生成路由插件，依赖安装完成启动项目即可生成路由文件，详见 https://github.com/865713897/auto-route-plugin#readme"
+    );
     logger::ready("项目初始化完成");
     Ok(())
 }

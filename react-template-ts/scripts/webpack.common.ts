@@ -16,7 +16,12 @@ type WebpackConfiguration = Configuration & WebpackDevServerConfiguration;
 const isDev: boolean = process.env.NODE_ENV === 'development';
 
 const getStyleLoader = (openCssModule = false) => {
-  const loader: any = ['style-loader', 'css-loader', 'postcss-loader', 'sass-loader'];
+  const loader: any = [
+    isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
+    'css-loader',
+    'postcss-loader',
+    'sass-loader',
+  ];
   if (openCssModule) {
     loader[1] = {
       loader: 'css-loader',
@@ -30,7 +35,9 @@ const getStyleLoader = (openCssModule = false) => {
   return loader;
 };
 
-const filename: string = isDev ? '[name].js' : 'static/js/[name].[chunkhash:8].js';
+const filename: string = isDev
+  ? '[name].js'
+  : 'static/js/[name].[chunkhash:8].js';
 
 const baseConfig: WebpackConfiguration = {
   entry: path.resolve(__dirname, '../src/index.tsx'),
@@ -66,7 +73,11 @@ const baseConfig: WebpackConfiguration = {
       },
       {
         test: /\.css$/,
-        use: [isDev ? 'style-loader' : MiniCssExtractPlugin.loader, 'css-loader', 'postcss-loader'],
+        use: [
+          isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
+          'css-loader',
+          'postcss-loader',
+        ],
         exclude: /node_modules/,
       },
       {
@@ -115,8 +126,14 @@ const baseConfig: WebpackConfiguration = {
       template: path.resolve(__dirname, '../public/index.html'),
       inject: true,
     }),
-    new AutoRoutePlugin({ routingMode: 'hash', onlyRoutes: false, indexPath: '/home' }),
-    new DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV) }),
+    new AutoRoutePlugin({
+      routingMode: 'hash',
+      onlyRoutes: false,
+      indexPath: '/home',
+    }),
+    new DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+    }),
     new CopyPlugin({
       patterns: [
         {

@@ -12,14 +12,14 @@ pub fn ready(msg: &str) {
     println!("{} - {}", style("ready").green(), msg);
 }
 
-pub fn select_msg(msg: &str) {
-    println!("{} - {}", style("select").color256(33), msg);
+pub fn pick(msg: &str) {
+    println!("{}  - {}", style("pick").color256(69), msg);
 }
 
 pub fn event(msg: &str) {
-    println!("{} - {}", style("event").color256(177), msg);
+    println!("{} - {}", style("event").magenta(), msg);
 }
 
-pub fn link_info(msg: &str) {
-    println!("{}  - {}", style("link").color256(33), style(msg).color256(33).underlined());
+pub fn full_info(msg: &str) {
+    println!("{}  - {}", style("info").cyan(), style(msg).yellow());
 }

@@ -3,8 +3,7 @@ mod core;
 use anyhow::{ Ok, Result };
 use clap::{ builder::{ EnumValueParser, ValueHint }, CommandFactory, Parser, Subcommand };
 use crate::utils::logger;
-use crate::core::cli;
-use crate::core::frame::FrameWork;
+use crate::core::cli::{ create_project, FrameWork };
 
 #[derive(Parser, Debug)]
 #[command(name = "elza-cli", author, version, about, args_conflicts_with_subcommands = true)]
@@ -40,7 +39,7 @@ fn main() -> Result<()> {
             match command {
                 Commands::Create { name, frame_work } => {
                     // 执行创建项目的逻辑
-                    cli::create_project(name, frame_work)?;
+                    create_project(name, frame_work)?;
                 }
             }
         }
