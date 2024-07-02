@@ -56,10 +56,10 @@ module.exports = {
     rules: [
       {
         test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
         use: {
           loader: 'babel-loader',
         },
+        exclude: /node_modules/,
       },
       {
         test: /\.css$/,
@@ -68,6 +68,7 @@ module.exports = {
           'css-loader',
           'postcss-loader',
         ],
+        exclude: /node_modules/,
       },
       {
         test: /\.scss$/,
@@ -80,6 +81,7 @@ module.exports = {
             use: getStyleLoader(false),
           },
         ],
+        exclude: /node_modules/,
       },
       {
         test: /\.(png|jpe?g|gif|webp|svg|bmp)$/,
@@ -90,16 +92,23 @@ module.exports = {
           },
         },
         generator: {
-          // 将图片文件输出到 static/images 目录中
-          filename: 'static/images/[name].[hash:8].[ext]',
+          filename: 'static/images/[name].[contenthash:8].[ext]',
         },
+        exclude: /node_modules/,
       },
       {
         test: /\.(woff2?|eot|ttf|otf)$/,
         type: 'asset/resource',
         generator: {
-          // 将字体文件输出到 static/fonts 目录中
-          filename: 'static/fonts/[name].[hash:8].[ext]',
+          filename: 'static/fonts/[name].[contenthash:8].[ext]',
+        },
+        exclude: /node_modules/,
+      },
+      {
+        test: /.(mp4|webm|ogg|mp3|wav|flac|aac)$/,
+        type: 'asset',
+        generator: {
+          filename: 'static/media/[name].[contenthash:8][ext]',
         },
       },
     ],

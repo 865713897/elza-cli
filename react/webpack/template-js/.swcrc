@@ -1,0 +1,15 @@
+{
+  "jsc": {
+    "parser": {
+      "syntax": "ecmascript",
+      "jsx": true,
+      "decorators": false,
+      "dynamicImport": true
+    },
+    "experimental": {
+      "plugins": [["swc-plugin-auto-css-module", {}]]
+    },
+    "target": "es2015"
+  },
+  "minify": true
+}

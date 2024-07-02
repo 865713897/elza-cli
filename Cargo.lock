@@ -306,6 +306,7 @@ dependencies = [
  "clap",
  "console",
  "dialoguer",
+ "lazy_static",
  "reqwest",
  "rust-embed",
  "serde_json",

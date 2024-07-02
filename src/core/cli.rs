@@ -1,12 +1,12 @@
-use anyhow::{ Ok, Result, Context };
-use std::path::PathBuf;
-use std::process::exit;
-use console::Style;
-use dialoguer::{ console::{ style, Term }, theme::ColorfulTheme, Select };
+use anyhow::{ Ok, Result };
+use std::{ process::exit, path::PathBuf, fmt };
+use console::style;
 use clap::ValueEnum;
 
 use crate::utils::logger;
 use super::build;
+use super::select::create_list;
+use super::pack;
 
 #[derive(Copy, Clone, Debug)]
 pub enum DependenciesMod {
@@ -21,7 +21,7 @@ pub struct Dependency {
     pub mod_type: DependenciesMod,
 }
 
-pub fn create_project(project_name: String, fame_work: Option<FrameWork>) -> Result<()> {
+pub fn create_project(project_name: String, frame_work: Option<FrameWork>) -> Result<()> {
     // 如果这个目录已经存在
     if PathBuf::from(&project_name).exists() {
         logger::error(&format!("创建失败: {:#?} 已经存在！", &project_name));
@@ -39,13 +39,26 @@ pub fn create_project(project_name: String, fame_work: Option<FrameWork>) -> Res
 
     logger::info("开始预设项目...");
 
-    let frame = frame_selector(fame_work)?;
-    let state = state_selector()?;
+    let frame = frame_selector(frame_work)?;
+    let build_tool = pack::build_tool_selector()?;
+    let mut loader = JsLoader::None;
+    if build_tool == pack::BuildTool::Webpack {
+        loader = js_loader_selector()?;
+    }
     let lang = lang_selector()?;
     let ui = ui_selector()?;
+    let state = state_selector()?;
     let css = css_selector()?;
 
-    build::start(project_name.as_str(), build::InlineConfig { ui, css, frame, lang, state })?;
+    build::start(project_name.as_str(), build::InlineConfig {
+        frame,
+        build_tool,
+        loader,
+        lang,
+        ui,
+        state,
+        css,
+    })?;
     Ok(())
 }
 
@@ -53,6 +66,14 @@ pub fn create_project(project_name: String, fame_work: Option<FrameWork>) -> Res
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum FrameWork {
     React,
+}
+
+impl fmt::Display for FrameWork {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FrameWork::React => write!(f, "React"),
+        }
+    }
 }
 
 impl FrameWork {
@@ -195,6 +216,92 @@ fn lang_selector() -> Result<CodeLanguage> {
     }
 }
 
+// loader
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
+pub enum JsLoader {
+    Babel,
+    Swc,
+    None,
+}
+
+impl JsLoader {
+    pub fn get_dependencies(&self) -> Vec<Dependency> {
+        match self {
+            JsLoader::Babel =>
+                vec![
+                    Dependency {
+                        name: "@babel/core",
+                        version: "^7.24.5",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "@babel/plugin-transform-runtime",
+                        version: "^7.24.7",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "@babel/preset-env",
+                        version: "^7.24.5",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "@babel/preset-react",
+                        version: "^7.24.1",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "@babel/runtime",
+                        version: "^7.24.7",
+                        mod_type: DependenciesMod::Prod,
+                    },
+                    Dependency {
+                        name: "babel-loader",
+                        version: "^9.1.3",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "babel-plugin-auto-css-module",
+                        version: "1.0.0",
+                        mod_type: DependenciesMod::Dev,
+                    }
+                ],
+            JsLoader::Swc =>
+                vec![
+                    Dependency {
+                        name: "@swc/core",
+                        version: "^1.6.6",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "swc-loader",
+                        version: "^0.2.6",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "swc-plugin-auto-css-module",
+                        version: "0.0.9",
+                        mod_type: DependenciesMod::Dev,
+                    }
+                ],
+            JsLoader::None => vec![],
+        }
+    }
+}
+
+fn js_loader_selector() -> Result<JsLoader> {
+    logger::pick("请选择loader");
+    let items = vec!["babel-loader", "swc-loader"];
+    let selection = create_list(&items, 0)?;
+    match selection {
+        0 => Ok(JsLoader::Babel),
+        1 => Ok(JsLoader::Swc),
+        _ => {
+            logger::error(&format!("暂不支持{}", &items[selection]));
+            exit(1);
+        }
+    }
+}
+
 // UI框架选择
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum UIDesign {
@@ -279,19 +386,4 @@ pub fn css_selector() -> Result<CssPreset> {
             exit(1);
         }
     }
-}
-
-pub fn create_list(items: &[&str], default: usize) -> Result<usize> {
-    Select::with_theme(
-        &(ColorfulTheme {
-            active_item_prefix: style("❯".to_string()).for_stderr().color256(69),
-            active_item_style: Style::new().for_stderr().color256(69),
-            ..ColorfulTheme::default()
-        })
-    )
-        .items(&items)
-        .default(default)
-        .interact_on_opt(&Term::stderr())
-        .context("选择项失败")?
-        .ok_or_else(|| anyhow::anyhow!("未选择任何项"))
 }

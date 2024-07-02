@@ -1,0 +1,16 @@
+{
+  "jsc": {
+    "parser": {
+      "syntax": "typescript",
+      "jsx": true,
+      "tsx": true,
+      "decorators": false,
+      "dynamicImport": true
+    },
+    "experimental": {
+      "plugins": [["swc-plugin-auto-css-module", {}]]
+    },
+    "target": "es2015"
+  },
+  "minify": true
+}

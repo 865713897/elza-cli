@@ -7,20 +7,27 @@ use rust_embed::RustEmbed;
 use crate::utils::logger;
 use crate::utils::error::{ handle_option, handle_result };
 
-use super::package_json::{
-    update_pkg_basic,
-    update_pkg_scripts,
-    update_pkg_dependencies,
-    sort_package_json,
+use super::package_json::{ PackageJson, PackageBasicInfo };
+use super::pack::BuildTool;
+use super::cli::{
+    Dependency,
+    FrameWork,
+    JsLoader,
+    CodeLanguage,
+    UIDesign,
+    StateManagement,
+    CssPreset,
 };
-use super::cli::{ Dependency, FrameWork, StateManagement, CodeLanguage, UIDesign, CssPreset };
 
+#[derive(Clone, Copy)]
 pub struct InlineConfig {
     pub frame: FrameWork,
-    pub state: StateManagement,
-    pub ui: UIDesign,
-    pub css: CssPreset,
+    pub build_tool: BuildTool,
+    pub loader: JsLoader,
     pub lang: CodeLanguage,
+    pub ui: UIDesign,
+    pub state: StateManagement,
+    pub css: CssPreset,
 }
 
 #[derive(RustEmbed)]
@@ -28,17 +35,17 @@ pub struct InlineConfig {
 struct Common;
 
 #[derive(RustEmbed)]
-#[folder = "react-template/"]
-struct ReactTemplate;
+#[folder = "react/webpack/template-js"]
+struct ReactWebpackJsTemplate;
 
 #[derive(RustEmbed)]
-#[folder = "react-template-ts/"]
-struct ReactTsTemplate;
+#[folder = "react/webpack/template-ts"]
+struct ReactWebpackTsTemplate;
 
 #[derive(Clone)]
 enum TemplateType {
-    ReactWebpack,
-    ReactTsWebpack,
+    ReactWebpackJs,
+    ReactWebpackTs,
     Common,
 }
 
@@ -48,37 +55,43 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
     let project_dir = PathBuf::from(project_name);
     create_project_dir(&project_dir)?;
 
-    let template_type = get_template_type(config.frame, config.lang);
+    let template_type = get_template_type(config.frame, config.build_tool, config.lang);
 
     // 复制特定模板文件
-    copy_template_files(&project_dir, template_type)?;
+    copy_template_files(&project_dir, template_type, config.clone())?;
 
     // 复制公共文件
-    copy_template_files(&project_dir, TemplateType::Common)?;
+    copy_template_files(&project_dir, TemplateType::Common, config.clone())?;
 
     logger::info("文件创建完成");
-
+    // 根据ui选项更新webpack rules
+    if config.build_tool == BuildTool::Webpack {
+        update_webpack_rules(&project_dir, config)?;
+    }
+    let mut pj = PackageJson::new(&project_dir)?;
     // 更新package.json基本信息
-    update_pkg_basic(&project_dir, project_name.to_owned())?;
-    update_pkg_scripts(&project_dir, config.lang)?;
-
+    pj.update_basic(PackageBasicInfo {
+        name: project_name.to_string(),
+        lang: config.lang,
+    })?;
     // 更新package.json依赖项
     let deps = vec![
         config.frame.get_dependencies(),
-        config.state.get_dependencies(),
+        config.build_tool.get_dependencies(),
+        config.loader.get_dependencies(),
         config.lang.get_dependencies(),
+        config.state.get_dependencies(),
         config.ui.get_dependencies(),
         config.css.get_dependencies()
     ];
     let flatten_deps: Vec<Dependency> = deps.into_iter().flatten().collect();
-    add_dependencies(&project_dir, flatten_deps)?;
-
-    // 更新package.json依赖项排序
-    sort_package_json(&project_dir)?;
-
-    // 根据ui选项更新webpack rules
-    handle_result(update_webpack_rules(&project_dir, config), "更新webpack rules失败");
-
+    for dep in flatten_deps {
+        pj.update_dependencies(&dep.name, &dep.version, dep.mod_type)?;
+    }
+    // 对依赖项排序
+    pj.sort();
+    // 写入
+    pj.write()?;
     logger::info("预设依赖项添加完成");
     git_init(&project_dir)?;
     logger::full_info(
@@ -89,10 +102,10 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
 }
 
 // 获取模板类型
-fn get_template_type(frame: FrameWork, lang: CodeLanguage) -> TemplateType {
-    match (frame, lang) {
-        (FrameWork::React, CodeLanguage::Js) => TemplateType::ReactWebpack,
-        (FrameWork::React, CodeLanguage::Ts) => TemplateType::ReactTsWebpack,
+fn get_template_type(frame: FrameWork, build_tool: BuildTool, lang: CodeLanguage) -> TemplateType {
+    match (frame, build_tool, lang) {
+        (FrameWork::React, BuildTool::Webpack, CodeLanguage::Js) => TemplateType::ReactWebpackJs,
+        (FrameWork::React, BuildTool::Webpack, CodeLanguage::Ts) => TemplateType::ReactWebpackTs,
     }
 }
 
@@ -105,18 +118,31 @@ fn create_project_dir(project_dir: &PathBuf) -> Result<()> {
 }
 
 // 复制模板文件
-fn copy_template_files(project_dir: &PathBuf, template_type: TemplateType) -> Result<()> {
+fn copy_template_files(
+    project_dir: &PathBuf,
+    template_type: TemplateType,
+    config: InlineConfig
+) -> Result<()> {
     let template_iter: Box<dyn Iterator<Item = std::borrow::Cow<'static, str>>> = match
         template_type
     {
-        TemplateType::ReactWebpack => Box::new(ReactTemplate::iter()),
-        TemplateType::ReactTsWebpack => Box::new(ReactTsTemplate::iter()),
+        TemplateType::ReactWebpackJs => Box::new(ReactWebpackJsTemplate::iter()),
+        TemplateType::ReactWebpackTs => Box::new(ReactWebpackTsTemplate::iter()),
         TemplateType::Common => Box::new(Common::iter()),
     };
     for filename in template_iter {
+        if should_skip_file(&filename, config.loader) {
+            continue;
+        }
         copy_template_file(project_dir, filename.as_ref(), template_type.clone())?;
     }
     Ok(())
+}
+
+// 判断是否应该忽略某个文件
+fn should_skip_file(filename: &str, loader: JsLoader) -> bool {
+    (loader == JsLoader::Babel && filename.contains(".swcrc")) ||
+        (loader == JsLoader::Swc && filename.contains("babel.config.js"))
 }
 
 // 遍历template内部文件，并写入
@@ -127,8 +153,8 @@ fn copy_template_file(
 ) -> Result<()> {
     let file_content = handle_option(
         match template_type {
-            TemplateType::ReactWebpack => ReactTemplate::get(filename),
-            TemplateType::ReactTsWebpack => ReactTsTemplate::get(filename),
+            TemplateType::ReactWebpackJs => ReactWebpackJsTemplate::get(filename),
+            TemplateType::ReactWebpackTs => ReactWebpackTsTemplate::get(filename),
             TemplateType::Common => Common::get(filename),
         },
         &format!("获取模板文件内容失败: {}", filename)
@@ -146,22 +172,6 @@ fn copy_template_file(
         fs::write(&file_path, file_content.data),
         &format!("写入文件失败: {:?}", file_path)
     );
-    Ok(())
-}
-
-// 添加依赖项目
-fn add_dependencies(project_dir: &PathBuf, dependencies: Vec<Dependency>) -> Result<()> {
-    for dependency in dependencies {
-        handle_result(
-            update_pkg_dependencies(
-                project_dir,
-                dependency.name,
-                dependency.version,
-                dependency.mod_type
-            ),
-            &format!("添加依赖项失败: {} {}", dependency.name, dependency.version)
-        );
-    }
     Ok(())
 }
 
@@ -190,20 +200,23 @@ fn run_git_command(project_dir: &PathBuf, args: &[&str], error_msg: &str) -> Res
 
 // 更新webpack rules
 fn update_webpack_rules(project_dir: &PathBuf, config: InlineConfig) -> Result<()> {
-    let InlineConfig { ui: _, lang, frame: _, css, state: _ } = config;
-
     let mut path = project_dir.clone();
-    match lang {
+    match config.lang {
         CodeLanguage::Ts => path.push("scripts/webpack.common.ts"),
         CodeLanguage::Js => path.push("scripts/webpack.common.js"),
     }
 
     let mut content = fs::read_to_string(&path).unwrap();
 
-    if css == CssPreset::Less {
+    if config.css == CssPreset::Less {
         content = content.replace("sass-loader", "less-loader").replace("scss", "less");
-        fs::write(&path, content).unwrap();
     }
+
+    if config.loader == JsLoader::Swc {
+        content = content.replace("babel-loader", "swc-loader");
+    }
+
+    fs::write(&path, content).unwrap();
 
     Ok(())
 }
