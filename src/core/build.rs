@@ -9,25 +9,29 @@ use crate::utils::error::{ handle_option, handle_result };
 
 use super::package_json::{ PackageJson, PackageBasicInfo };
 use super::pack::BuildTool;
+use super::comprehensive::ComprehensiveType;
 use super::cli::{
     Dependency,
     FrameWork,
-    JsLoader,
     CodeLanguage,
+    JsLoader,
     UIDesign,
     StateManagement,
     CssPreset,
+    BuildToolWithCssPreset
 };
 
 #[derive(Clone, Copy)]
 pub struct InlineConfig {
     pub frame: FrameWork,
     pub build_tool: BuildTool,
-    pub loader: JsLoader,
     pub lang: CodeLanguage,
+    pub comprehensive_type: ComprehensiveType,
+    pub loader: JsLoader,
     pub ui: UIDesign,
     pub state: StateManagement,
     pub css: CssPreset,
+    pub build_tool_with_css: BuildToolWithCssPreset,
 }
 
 #[derive(RustEmbed)]
@@ -42,10 +46,20 @@ struct ReactWebpackJsTemplate;
 #[folder = "react/webpack/template-ts"]
 struct ReactWebpackTsTemplate;
 
+#[derive(RustEmbed)]
+#[folder = "react/vite/template-js"]
+struct ReactViteJsTemplate;
+
+#[derive(RustEmbed)]
+#[folder = "react/vite/template-ts"]
+struct ReactViteTsTemplate;
+
 #[derive(Clone)]
 enum TemplateType {
     ReactWebpackJs,
     ReactWebpackTs,
+    ReactViteJs,
+    ReactViteTs,
     Common,
 }
 
@@ -55,7 +69,7 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
     let project_dir = PathBuf::from(project_name);
     create_project_dir(&project_dir)?;
 
-    let template_type = get_template_type(config.frame, config.build_tool, config.lang);
+    let template_type = get_template_type(config.comprehensive_type);
 
     // 复制特定模板文件
     copy_template_files(&project_dir, template_type, config.clone())?;
@@ -72,17 +86,19 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
     // 更新package.json基本信息
     pj.update_basic(PackageBasicInfo {
         name: project_name.to_string(),
-        lang: config.lang,
+        comprehensive_type: config.comprehensive_type,
     })?;
     // 更新package.json依赖项
     let deps = vec![
         config.frame.get_dependencies(),
         config.build_tool.get_dependencies(),
-        config.loader.get_dependencies(),
         config.lang.get_dependencies(),
+        config.comprehensive_type.get_dependencies(),
+        config.loader.get_dependencies(),
         config.state.get_dependencies(),
         config.ui.get_dependencies(),
-        config.css.get_dependencies()
+        config.css.get_dependencies(),
+        config.build_tool_with_css.get_dependencies(),
     ];
     let flatten_deps: Vec<Dependency> = deps.into_iter().flatten().collect();
     for dep in flatten_deps {
@@ -94,18 +110,22 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
     pj.write()?;
     logger::info("预设依赖项添加完成");
     git_init(&project_dir)?;
-    logger::full_info(
-        "[你知道吗？] webpack模板内置自动生成路由插件，依赖安装完成启动项目即可生成路由文件，详见 https://github.com/865713897/auto-route-plugin#readme"
-    );
+    if config.build_tool == BuildTool::Webpack {
+        logger::full_info(
+            "[你知道吗？] webpack模板内置自动生成路由插件，依赖安装完成启动项目即可生成路由文件，详见 https://github.com/865713897/auto-route-plugin#readme"
+        );
+    }
     logger::ready("项目初始化完成");
     Ok(())
 }
 
 // 获取模板类型
-fn get_template_type(frame: FrameWork, build_tool: BuildTool, lang: CodeLanguage) -> TemplateType {
-    match (frame, build_tool, lang) {
-        (FrameWork::React, BuildTool::Webpack, CodeLanguage::Js) => TemplateType::ReactWebpackJs,
-        (FrameWork::React, BuildTool::Webpack, CodeLanguage::Ts) => TemplateType::ReactWebpackTs,
+fn get_template_type(comprehensive_type: ComprehensiveType) -> TemplateType {
+    match comprehensive_type {
+        ComprehensiveType::WebpackReactJs => TemplateType::ReactWebpackJs,
+        ComprehensiveType::WebpackReactTs => TemplateType::ReactWebpackTs,
+        ComprehensiveType::ViteReactJs => TemplateType::ReactViteJs,
+        ComprehensiveType::ViteReactTs => TemplateType::ReactViteTs,
     }
 }
 
@@ -128,6 +148,8 @@ fn copy_template_files(
     {
         TemplateType::ReactWebpackJs => Box::new(ReactWebpackJsTemplate::iter()),
         TemplateType::ReactWebpackTs => Box::new(ReactWebpackTsTemplate::iter()),
+        TemplateType::ReactViteJs => Box::new(ReactViteJsTemplate::iter()),
+        TemplateType::ReactViteTs => Box::new(ReactViteTsTemplate::iter()),
         TemplateType::Common => Box::new(Common::iter()),
     };
     for filename in template_iter {
@@ -155,6 +177,8 @@ fn copy_template_file(
         match template_type {
             TemplateType::ReactWebpackJs => ReactWebpackJsTemplate::get(filename),
             TemplateType::ReactWebpackTs => ReactWebpackTsTemplate::get(filename),
+            TemplateType::ReactViteJs => ReactViteJsTemplate::get(filename),
+            TemplateType::ReactViteTs => ReactViteTsTemplate::get(filename),
             TemplateType::Common => Common::get(filename),
         },
         &format!("获取模板文件内容失败: {}", filename)

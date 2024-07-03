@@ -15,7 +15,7 @@ class Style {
   }
 
   apply(color) {
-    this.text = color + this.text + colors.reset;
+    this.text = color + this.original + colors.reset;
     return this;
   }
 

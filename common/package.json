@@ -4,29 +4,14 @@
   "description": "",
   "main": "",
   "scripts": {
-    "start": "cross-env NODE_ENV=development webpack-dev-server --config ./scripts/webpack.dev.js",
-    "build": "cross-env NODE_ENV=production webpack --config ./scripts/webpack.prod.js"
+    "start": "",
+    "build": ""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {},
   "devDependencies": {
-    "@elzajs/auto-route-plugin": "^0.1.6",
-    "autoprefixer": "^10.4.19",
-    "copy-webpack-plugin": "^12.0.2",
-    "cross-env": "^7.0.3",
-    "css-loader": "^7.1.1",
-    "css-minimizer-webpack-plugin": "^7.0.0",
-    "html-webpack-plugin": "^5.6.0",
-    "terser-webpack-plugin": "^5.3.10",
-    "mini-css-extract-plugin": "^2.9.0",
-    "postcss-loader": "^8.1.1",
-    "style-loader": "^4.0.0",
-    "webpack": "^5.91.0",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.0.4",
-    "webpack-merge": "^5.10.0",
-    "webpackbar": "^6.0.1"
+    "cross-env": "^7.0.3"
   }
 }

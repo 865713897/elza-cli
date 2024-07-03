@@ -10,7 +10,7 @@ use super::cli::{ Dependency, DependenciesMod };
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum BuildTool {
     Webpack,
-    // Vite,
+    Vite,
     // Rspack,
 }
 
@@ -95,7 +95,12 @@ impl BuildTool {
                         mod_type: DependenciesMod::Dev,
                     }
                 ],
-            // BuildTool::Vite => vec![],
+            BuildTool::Vite =>
+                vec![Dependency {
+                    name: "vite",
+                    version: "^5.3.1",
+                    mod_type: DependenciesMod::Dev,
+                }],
             // BuildTool::Rspack => vec![],
         }
     }
@@ -107,7 +112,7 @@ pub fn build_tool_selector() -> Result<BuildTool> {
     let selection = create_list(&items, 0)?;
     match selection {
         0 => Ok(BuildTool::Webpack),
-        // 1 => Ok(BuildTool::Vite),
+        1 => Ok(BuildTool::Vite),
         // 2 => Ok(BuildTool::Rspack),
         _ => {
             logger::error(&format!("暂不支持: {}", &items[selection]));

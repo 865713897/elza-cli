@@ -1,15 +1,19 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { exec } = require('child_process');
-const { logger } = require('./logger');
+const { logger, style } = require('./logger');
 
 const npmDir = './npm'; // 定义npm包的目录
 
-async function publishPackage(dirPath) {
+async function publishPackage(dirPath, version) {
   try {
     logger.event(`${dirPath} -> npm publish --access public`);
     await execPromise('npm publish --access public', { cwd: dirPath });
-    logger.ready(`发布 ${dirPath} 完成`);
+    logger.ready(
+      `发布 ${style(dirPath.replace('npm/', '')).green()}${style(`@${version}`)
+        .green()
+        .bold()} 完成`
+    );
   } catch (error) {
     logger.error(`发布 ${dirPath} 失败: ${error.message}`);
   }
@@ -35,8 +39,9 @@ async function findAndPublishPackages(dirPath) {
       if (entry.isDirectory()) {
         const packageJsonPath = path.join(fullPath, 'package.json');
         try {
-          await fs.access(packageJsonPath);
-          await publishPackage(fullPath); // 发现package.json，发布包
+          const data = await fs.readFile(packageJsonPath, 'utf-8');
+          const json = JSON.parse(data);
+          await publishPackage(fullPath, json.version); // 发现package.json，发布包
         } catch {
           await findAndPublishPackages(fullPath); // 继续递归搜索子目录
         }

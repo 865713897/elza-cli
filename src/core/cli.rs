@@ -7,6 +7,7 @@ use crate::utils::logger;
 use super::build;
 use super::select::create_list;
 use super::pack;
+use super::comprehensive;
 
 #[derive(Copy, Clone, Debug)]
 pub enum DependenciesMod {
@@ -41,25 +42,56 @@ pub fn create_project(project_name: String, frame_work: Option<FrameWork>) -> Re
 
     let frame = frame_selector(frame_work)?;
     let build_tool = pack::build_tool_selector()?;
-    let mut loader = JsLoader::None;
-    if build_tool == pack::BuildTool::Webpack {
-        loader = js_loader_selector()?;
-    }
     let lang = lang_selector()?;
+    // 获取综合类型
+    let comprehensive_type = get_comprehensive_type(frame, build_tool, lang);
+    let loader = match build_tool {
+        pack::BuildTool::Webpack => js_loader_selector()?,
+        pack::BuildTool::Vite => JsLoader::None,
+    };
     let ui = ui_selector()?;
     let state = state_selector()?;
     let css = css_selector()?;
+    let build_tool_with_css = get_build_tool_with_css(build_tool, css);
 
     build::start(project_name.as_str(), build::InlineConfig {
         frame,
         build_tool,
-        loader,
         lang,
+        comprehensive_type,
+        loader,
         ui,
         state,
         css,
+        build_tool_with_css,
     })?;
     Ok(())
+}
+
+fn get_comprehensive_type(
+    frame: FrameWork,
+    build_tool: pack::BuildTool,
+    lang: CodeLanguage
+) -> comprehensive::ComprehensiveType {
+    match (frame, build_tool, lang) {
+        (FrameWork::React, pack::BuildTool::Webpack, CodeLanguage::Js) =>
+            comprehensive::ComprehensiveType::WebpackReactJs,
+        (FrameWork::React, pack::BuildTool::Webpack, CodeLanguage::Ts) =>
+            comprehensive::ComprehensiveType::WebpackReactTs,
+        (FrameWork::React, pack::BuildTool::Vite, CodeLanguage::Js) =>
+            comprehensive::ComprehensiveType::ViteReactJs,
+        (FrameWork::React, pack::BuildTool::Vite, CodeLanguage::Ts) =>
+            comprehensive::ComprehensiveType::ViteReactTs,
+    }
+}
+
+fn get_build_tool_with_css(build_tool: pack::BuildTool, css: CssPreset) -> BuildToolWithCssPreset {
+    match (build_tool, css) {
+        (pack::BuildTool::Webpack, CssPreset::Sass) => BuildToolWithCssPreset::WebpackSass,
+        (pack::BuildTool::Webpack, CssPreset::Less) => BuildToolWithCssPreset::WebpackLess,
+        (pack::BuildTool::Vite, CssPreset::Sass) => BuildToolWithCssPreset::ViteSass,
+        (pack::BuildTool::Vite, CssPreset::Less) => BuildToolWithCssPreset::ViteLess,
+    }
 }
 
 // 框架选择
@@ -119,41 +151,6 @@ fn frame_selector(frame_work: Option<FrameWork>) -> Result<FrameWork> {
     }
 }
 
-// 状态选择
-#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
-pub enum StateManagement {
-    Zustand,
-    None,
-}
-
-impl StateManagement {
-    pub fn get_dependencies(&self) -> Vec<Dependency> {
-        match self {
-            StateManagement::Zustand =>
-                vec![Dependency {
-                    name: "zustand",
-                    version: "^4.5.4",
-                    mod_type: DependenciesMod::Prod,
-                }],
-            StateManagement::None => vec![],
-        }
-    }
-}
-
-fn state_selector() -> Result<StateManagement> {
-    logger::pick("请选择状态管理器");
-    let items = vec!["zustand", "跳过"];
-    let selection = create_list(&items, 0)?;
-    match selection {
-        0 => Ok(StateManagement::Zustand),
-        1 => Ok(StateManagement::None),
-        _ => {
-            logger::error("暂不支持");
-            exit(1);
-        }
-    }
-}
-
 // 语言选择
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum CodeLanguage {
@@ -165,39 +162,7 @@ impl CodeLanguage {
     pub fn get_dependencies(&self) -> Vec<Dependency> {
         match self {
             CodeLanguage::Js => vec![],
-            CodeLanguage::Ts =>
-                vec![
-                    Dependency {
-                        name: "@babel/preset-typescript",
-                        version: "^7.24.1",
-                        mod_type: DependenciesMod::Dev,
-                    },
-                    Dependency {
-                        name: "@types/node",
-                        version: "^20.12.12",
-                        mod_type: DependenciesMod::Dev,
-                    },
-                    Dependency {
-                        name: "@types/react",
-                        version: "^18.3.2",
-                        mod_type: DependenciesMod::Dev,
-                    },
-                    Dependency {
-                        name: "@types/react-dom",
-                        version: "^18.3.0",
-                        mod_type: DependenciesMod::Dev,
-                    },
-                    Dependency {
-                        name: "@types/webpack",
-                        version: "^5.28.5",
-                        mod_type: DependenciesMod::Dev,
-                    },
-                    Dependency {
-                        name: "ts-node",
-                        version: "^10.9.2",
-                        mod_type: DependenciesMod::Dev,
-                    }
-                ],
+            CodeLanguage::Ts => vec![],
         }
     }
 }
@@ -342,6 +307,41 @@ pub fn ui_selector() -> Result<UIDesign> {
     }
 }
 
+// 状态选择
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
+pub enum StateManagement {
+    Zustand,
+    None,
+}
+
+impl StateManagement {
+    pub fn get_dependencies(&self) -> Vec<Dependency> {
+        match self {
+            StateManagement::Zustand =>
+                vec![Dependency {
+                    name: "zustand",
+                    version: "^4.5.4",
+                    mod_type: DependenciesMod::Prod,
+                }],
+            StateManagement::None => vec![],
+        }
+    }
+}
+
+fn state_selector() -> Result<StateManagement> {
+    logger::pick("请选择状态管理器");
+    let items = vec!["zustand", "跳过"];
+    let selection = create_list(&items, 0)?;
+    match selection {
+        0 => Ok(StateManagement::Zustand),
+        1 => Ok(StateManagement::None),
+        _ => {
+            logger::error("暂不支持");
+            exit(1);
+        }
+    }
+}
+
 // css预处理
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum CssPreset {
@@ -353,23 +353,45 @@ impl CssPreset {
     pub fn get_dependencies(&self) -> Vec<Dependency> {
         match self {
             CssPreset::Sass =>
-                vec![
-                    Dependency {
-                        name: "sass-loader",
-                        version: "^14.2.1",
-                        mod_type: DependenciesMod::Dev,
-                    },
-                    Dependency { name: "sass", version: "^1.77.6", mod_type: DependenciesMod::Dev }
-                ],
+                vec![Dependency {
+                    name: "sass",
+                    version: "^1.77.6",
+                    mod_type: DependenciesMod::Dev,
+                }],
             CssPreset::Less =>
-                vec![
-                    Dependency { name: "less", version: "^4.1.3", mod_type: DependenciesMod::Dev },
-                    Dependency {
-                        name: "less-loader",
-                        version: "^11.1.0",
-                        mod_type: DependenciesMod::Dev,
-                    }
-                ],
+                vec![Dependency {
+                    name: "less",
+                    version: "^4.1.3",
+                    mod_type: DependenciesMod::Dev,
+                }],
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
+pub enum BuildToolWithCssPreset {
+    WebpackSass,
+    WebpackLess,
+    ViteSass,
+    ViteLess,
+}
+
+impl BuildToolWithCssPreset {
+    pub fn get_dependencies(&self) -> Vec<Dependency> {
+        match self {
+            BuildToolWithCssPreset::WebpackSass =>
+                vec![Dependency {
+                    name: "sass-loader",
+                    version: "^14.2.1",
+                    mod_type: DependenciesMod::Dev,
+                }],
+            BuildToolWithCssPreset::WebpackLess =>
+                vec![Dependency {
+                    name: "less-loader",
+                    version: "^11.1.0",
+                    mod_type: DependenciesMod::Dev,
+                }],
+            _ => vec![],
         }
     }
 }

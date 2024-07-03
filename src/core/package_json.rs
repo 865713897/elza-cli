@@ -3,7 +3,8 @@ use serde_json::{ Value, Map };
 use std::fs;
 use std::path::PathBuf;
 use crate::logger;
-use super::cli::{ DependenciesMod, CodeLanguage };
+use super::cli::DependenciesMod;
+use super::comprehensive::ComprehensiveType;
 
 pub struct PackageJson {
     project_dir: PathBuf,
@@ -13,7 +14,7 @@ pub struct PackageJson {
 #[derive(Debug, Clone)]
 pub struct PackageBasicInfo {
     pub name: String,
-    pub lang: CodeLanguage,
+    pub comprehensive_type: ComprehensiveType,
 }
 
 impl PackageJson {
@@ -30,8 +31,16 @@ impl PackageJson {
 
     pub fn update_basic(&mut self, basic_info: PackageBasicInfo) -> Result<()> {
         self.json["name"] = Value::String(basic_info.name);
-        match basic_info.lang {
-            CodeLanguage::Ts => {
+        match basic_info.comprehensive_type {
+            ComprehensiveType::WebpackReactJs => {
+                self.json["scripts"]["start"] = Value::String(
+                    "cross-env NODE_ENV=development webpack-dev-server --config ./scripts/webpack.dev.js".to_string()
+                );
+                self.json["scripts"]["build"] = Value::String(
+                    "cross-env NODE_ENV=production webpack --config ./scripts/webpack.prod.js".to_string()
+                );
+            }
+            ComprehensiveType::WebpackReactTs => {
                 self.json["scripts"]["start"] = Value::String(
                     "cross-env NODE_ENV=development webpack-dev-server --config ./scripts/webpack.dev.ts".to_string()
                 );
@@ -39,7 +48,16 @@ impl PackageJson {
                     "cross-env NODE_ENV=production webpack --config ./scripts/webpack.prod.ts".to_string()
                 );
             }
-            _ => {}
+            ComprehensiveType::ViteReactJs => {
+                self.json["scripts"]["start"] = Value::String("vite".to_string());
+                self.json["scripts"]["build"] = Value::String("vite build".to_string());
+                self.json["scripts"]["preview"] = Value::String("vite preview".to_string());
+            }
+            ComprehensiveType::ViteReactTs => {
+                self.json["scripts"]["start"] = Value::String("vite".to_string());
+                self.json["scripts"]["build"] = Value::String("tsc -b && vite build".to_string());
+                self.json["scripts"]["preview"] = Value::String("vite preview".to_string());
+            }
         }
         Ok(())
     }
