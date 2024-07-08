@@ -40,6 +40,11 @@ impl ComprehensiveType {
                         name: "@types/webpack",
                         version: "^5.28.5",
                         mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "ts-node",
+                        version: "^10.9.2",
+                        mod_type: DependenciesMod::Dev,
                     }
                 ],
             ComprehensiveType::ViteReactJs =>

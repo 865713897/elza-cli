@@ -162,7 +162,12 @@ impl CodeLanguage {
     pub fn get_dependencies(&self) -> Vec<Dependency> {
         match self {
             CodeLanguage::Js => vec![],
-            CodeLanguage::Ts => vec![],
+            CodeLanguage::Ts =>
+                vec![Dependency {
+                    name: "typescript",
+                    version: "^5.5.2",
+                    mod_type: DependenciesMod::Dev,
+                }],
         }
     }
 }

@@ -49,11 +49,13 @@ impl PackageJson {
                 );
             }
             ComprehensiveType::ViteReactJs => {
+                self.json["type"] = Value::String("module".to_string());
                 self.json["scripts"]["start"] = Value::String("vite".to_string());
                 self.json["scripts"]["build"] = Value::String("vite build".to_string());
                 self.json["scripts"]["preview"] = Value::String("vite preview".to_string());
             }
             ComprehensiveType::ViteReactTs => {
+                self.json["type"] = Value::String("module".to_string());
                 self.json["scripts"]["start"] = Value::String("vite".to_string());
                 self.json["scripts"]["build"] = Value::String("tsc -b && vite build".to_string());
                 self.json["scripts"]["preview"] = Value::String("vite preview".to_string());

@@ -1,28 +1,26 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "baseUrl": ".",
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": false,
-    "forceConsistentCasingInFileNames": true,
     "module": "commonjs",
-    "moduleResolution": "Node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
+    "target": "es2015",
+    "lib": ["es2015", "DOM"],
+    "sourceMap": true,
     "noImplicitAny": false,
-    "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "jsx": "react",
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "allowJs": false,
+    "skipLibCheck": true,
     "experimentalDecorators": true,
-    "jsx": "react", // react18这里也可以改成react-jsx
-    "paths": {
-      "@/*": ["src/*"]
-    },
-    "types": ["node"]
+    "strictNullChecks": true,
+    "resolveJsonModule": true,
+    "strict": true,
+    "types": ["node"],
   },
-  // "include": ["./src"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "typings.d.ts"],
+  "exclude": ["node_modules", "build", "dist", "scripts", "webpack", "jest"]
 }
