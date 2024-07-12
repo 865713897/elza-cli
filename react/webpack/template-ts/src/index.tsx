@@ -4,4 +4,12 @@ import Router from './router';
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
 
-root.render(<Router />);
+function renderApp() {
+  root.render(<Router />);
+}
+
+renderApp();
+
+if (module.hot) {
+  module.hot.accept('./router', renderApp);
+}

@@ -74,10 +74,17 @@ pub async fn get_latest_version(name: &str) -> Result<String> {
 
 // 比较版本号
 pub fn compare_versions(current_version: &str, latest_version: &str) {
-    let current_parts: Vec<&str> = current_version.split(".").collect();
-    let latest_parts: Vec<&str> = latest_version.split(".").collect();
-    for n in 1..current_parts.len() {
-        if current_parts[n].parse::<i32>().unwrap() < latest_parts[n].parse::<i32>().unwrap() {
+    let current_parts: Vec<i32> = current_version
+        .split('.')
+        .map(|s| s.parse().unwrap_or(0))
+        .collect();
+    let latest_parts: Vec<i32> = latest_version
+        .split('.')
+        .map(|s| s.parse().unwrap_or(0))
+        .collect();
+
+    for (current, latest) in current_parts.iter().zip(latest_parts.iter()) {
+        if current < latest {
             print_version(current_version, latest_version);
             return;
         }
@@ -94,29 +101,75 @@ fn print_version(current_version: &str, latest_version: &str) {
         h: &format!("{}", style("═").yellow()),
         v: &format!("{}", style("║").yellow()),
     };
-    let tip = "  发现新版本！  ";
-    let current_version_text = format!("  当前版本: {}  ", style(current_version).red());
-    let latest_version_text = format!("  最新版本: {}  ", style(latest_version).green().bold());
-    let max_len = 20;
-
-    let header_line = format!("{}{}{}", borders.tl, borders.h.repeat(max_len), borders.tr);
-    let tip_line = format!(
+    let header = format!("{}", style("  发现新版本!  ").green());
+    let footer = format!("  请使用 `{}` 更新  ", style("npm install -g elza-cli").magenta());
+    let current_version_text = format!(
+        "   > 当前版本: {}  ",
+        style(format!("v{}", current_version)).red()
+    );
+    let latest_version_text = format!(
+        "   > 最新版本: {}  ",
+        style(format!("v{}", latest_version)).green().bold()
+    );
+    let header_len = get_string_length(&header) - 9;
+    let footer_len = get_string_length(&footer) - 9;
+    let current_len = get_string_length(&current_version_text) - 9;
+    let latest_len = get_string_length(&latest_version_text) - 13;
+    let max_len = header_len.max(footer_len).max(current_len).max(latest_len);
+    let before_lines = vec![
+        format!("{}{}{}", borders.tl, borders.h.repeat(max_len), borders.tr),
+        format!("{}{}{}{}", borders.v, header, " ".repeat(max_len - header_len), borders.v),
+        format!(
+            "{}{}{}{}",
+            borders.v,
+            current_version_text,
+            " ".repeat(max_len - current_len),
+            borders.v
+        )
+    ];
+    let main = format!(
         "{}{}{}{}",
         borders.v,
-        style(tip).cyan(),
-        " ".repeat(max_len - 16),
+        latest_version_text,
+        " ".repeat(max_len - latest_len),
         borders.v
     );
-    let current_version_line = format!("{}{}{}", borders.v, current_version_text, borders.v);
-    let latest_version_line = format!("{}{}{}", borders.v, latest_version_text, borders.v);
-    let footer_line = format!("{}{}{}", borders.bl, borders.h.repeat(max_len), borders.br);
+    let after_lines = vec![
+        format!("{}{}{}", borders.v, " ".repeat(max_len), borders.v),
+        format!("{}{}{}{}", borders.v, footer, " ".repeat(max_len - footer_len), borders.v),
+        format!("{}{}{}", borders.bl, borders.h.repeat(max_len), borders.br)
+    ];
+    let mut before = vec![];
+    for line in before_lines {
+        before.push(format!("{}{}", " ".repeat(8), line));
+    }
+    let mut after = vec![];
+    for line in after_lines {
+        after.push(format!("{}{}", " ".repeat(8), line));
+    }
+    let before = before.join("\n");
+    let after = after.join("\n");
+    println!("{}", before);
+    logger::info(&main);
+    println!("{}", after);
+}
 
-    println!(
-        "{}\n{}\n{}\n{}\n{}",
-        header_line,
-        tip_line,
-        current_version_line,
-        latest_version_line,
-        footer_line
-    );
+// 获取字符串长度
+fn get_string_length(s: &str) -> usize {
+    let s = String::from(s);
+    let vec: Vec<char> = s.chars().collect();
+    let mut len = 0;
+    for c in vec {
+        if is_chinese(c) {
+            len += 2;
+        } else {
+            len += 1;
+        }
+    }
+    len
+}
+
+// 是否为中文字符
+fn is_chinese(c: char) -> bool {
+    return c >= '\u{4e00}' && c <= '\u{9fa5}';
 }
