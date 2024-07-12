@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::fs;
 use std::process::{ Command, Stdio, exit };
-use anyhow::Result;
+use anyhow::{ Result, Ok };
 use rust_embed::RustEmbed;
 
 use crate::utils::logger;
@@ -18,7 +18,7 @@ use super::cli::{
     UIDesign,
     StateManagement,
     CssPreset,
-    BuildToolWithCssPreset
+    BuildToolWithCssPreset,
 };
 
 #[derive(Clone, Copy)]
@@ -98,7 +98,7 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
         config.state.get_dependencies(),
         config.ui.get_dependencies(),
         config.css.get_dependencies(),
-        config.build_tool_with_css.get_dependencies(),
+        config.build_tool_with_css.get_dependencies()
     ];
     let flatten_deps: Vec<Dependency> = deps.into_iter().flatten().collect();
     for dep in flatten_deps {
@@ -115,7 +115,6 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
             "[你知道吗？] webpack模板内置约定式路由插件，依赖安装完成启动项目即可生成路由文件，详见 https://github.com/865713897/webpack-plugin-auto-routes"
         );
     }
-    logger::ready("项目初始化完成");
     Ok(())
 }
 

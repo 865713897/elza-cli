@@ -1,6 +1,6 @@
 use anyhow::{ Ok, Result };
-use reqwest::Client;
 use std::{ process::exit, path::PathBuf, fmt };
+use tokio::{ spawn, join };
 use console::style;
 use clap::ValueEnum;
 
@@ -29,55 +29,52 @@ pub async fn create_project(project_name: String, frame_work: Option<FrameWork>)
         logger::error(&format!("创建失败: {:#?} 已经存在！", &project_name));
         return Ok(());
     }
-    let npm_registry = utils::get_user_npm_registry();
-    let latest_version = get_latest_version(env!("CARGO_PKG_NAME"), &npm_registry).await?;
     let current_version = env!("CARGO_PKG_VERSION");
-    if current_version != latest_version {
-        logger::info(
-            &format!(
-                "{}{}(最新版本: {})",
-                style("elza-cli v").green().bold(),
-                style(current_version).green(),
-                style(format!("v{}", latest_version)).yellow().bold()
-            )
-        );
-    } else {
-        logger::info(
-            &format!(
-                "{}{}",
-                style("elza-cli v").green().bold(),
-                style(current_version).green().bold()
-            )
-        );
-    }
+
+    logger::info(
+        &format!("{}{}", style("elza-cli v").green().bold(), style(current_version).green().bold())
+    );
 
     logger::info("开始预设项目...");
 
-    let frame = frame_selector(frame_work)?;
-    let build_tool = pack::build_tool_selector()?;
-    let lang = lang_selector()?;
-    // 获取综合类型
-    let comprehensive_type = get_comprehensive_type(frame, build_tool, lang);
-    let loader = match build_tool {
-        pack::BuildTool::Webpack => js_loader_selector()?,
-        pack::BuildTool::Vite => JsLoader::None,
-    };
-    let ui = ui_selector()?;
-    let state = state_selector()?;
-    let css = css_selector()?;
-    let build_tool_with_css = get_build_tool_with_css(build_tool, css);
+    // 获取最新版本
+    let latest_version_future = spawn(async move {
+        utils::get_latest_version(env!("CARGO_PKG_NAME")).await
+    });
 
-    build::start(project_name.as_str(), build::InlineConfig {
-        frame,
-        build_tool,
-        lang,
-        comprehensive_type,
-        loader,
-        ui,
-        state,
-        css,
-        build_tool_with_css,
-    })?;
+    let config_future = spawn(async move {
+        let frame = frame_selector(frame_work)?;
+        let build_tool = pack::build_tool_selector()?;
+        let lang = lang_selector()?;
+        // 获取综合类型
+        let comprehensive_type = get_comprehensive_type(frame, build_tool, lang);
+        let loader = match build_tool {
+            pack::BuildTool::Webpack => js_loader_selector()?,
+            pack::BuildTool::Vite => JsLoader::None,
+        };
+        let ui = ui_selector()?;
+        let state = state_selector()?;
+        let css = css_selector()?;
+        let build_tool_with_css = get_build_tool_with_css(build_tool, css);
+        build
+            ::start(project_name.as_str(), build::InlineConfig {
+                frame,
+                build_tool,
+                lang,
+                comprehensive_type,
+                loader,
+                ui,
+                state,
+                css,
+                build_tool_with_css,
+            })
+            .map_err(|e| anyhow::anyhow!(e))
+    });
+
+    let (latest_version_result, _) = join!(latest_version_future, config_future);
+    let latest_version = latest_version_result??;
+    utils::compare_versions(current_version, &latest_version);
+    logger::ready("项目初始化完成");
     Ok(())
 }
 
@@ -104,23 +101,6 @@ fn get_build_tool_with_css(build_tool: pack::BuildTool, css: CssPreset) -> Build
         (pack::BuildTool::Webpack, CssPreset::Less) => BuildToolWithCssPreset::WebpackLess,
         (pack::BuildTool::Vite, CssPreset::Sass) => BuildToolWithCssPreset::ViteSass,
         (pack::BuildTool::Vite, CssPreset::Less) => BuildToolWithCssPreset::ViteLess,
-    }
-}
-
-// 获取最新版本
-async fn get_latest_version(name: &str, npm_registry: &str) -> Result<String> {
-    // 创建一个 reqwest 客户端
-    let client = Client::new();
-    let response = client.get(format!("{}{}", npm_registry, name)).send().await?;
-    // 检查请求是否成功
-    if response.status().is_success() {
-        let body = response.text().await?;
-        // 解析 JSON 响应，获取版本信息等
-        let package_info: serde_json::Value = serde_json::from_str(&body)?;
-        let latest_version = package_info["dist-tags"]["latest"].as_str().unwrap_or("unknown");
-        return Ok(latest_version.to_string());
-    } else {
-        return Ok("".to_string());
     }
 }
 

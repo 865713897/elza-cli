@@ -1,6 +1,6 @@
 {
   "name": "@elza-cli/win32-x64",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "The Windows 64-bit binary for elza-cli",
   "keywords": [
     "elza-cli",
