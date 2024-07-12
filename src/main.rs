@@ -2,6 +2,7 @@ mod utils;
 mod core;
 use anyhow::{ Ok, Result };
 use console::style;
+use tokio::runtime::Runtime;
 use lazy_static::lazy_static;
 use clap::{
     builder::{ EnumValueParser, ValueHint },
@@ -58,7 +59,14 @@ enum Commands {
     },
 }
 
-fn main() -> Result<()> {
+fn main() {
+    if let Err(e) = run() {
+        eprintln!("Error: {}", e);
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Result<()> {
     let _cli = match Cli::try_parse_from(std::env::args()) {
         std::result::Result::Ok(cli) => cli,
         Err(e) => {
@@ -76,7 +84,11 @@ fn main() -> Result<()> {
                     // 执行创建项目的逻辑
                     match name {
                         Some(project_name) => {
-                            create_project(project_name, frame_work)?;
+                            let rt: Runtime = Runtime::new()?;
+                            rt.block_on(async {
+                                create_project(project_name, frame_work).await?;
+                                Ok(())
+                            })?;
                         }
                         None => {
                             logger::error("Name为必填参数\n");

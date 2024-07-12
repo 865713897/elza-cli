@@ -1,6 +1,6 @@
 [package]
 name = "elza-cli"
-version = "1.0.15"
+version = "1.0.16"
 edition = "2021"
 description = "基于rust的工具链"
 authors = ["limy <865713897@qq.com>"]
@@ -19,12 +19,14 @@ default-run = "elza-cli"
 anyhow = "1.0.86"
 clap = { version = "4.5.7", features = ["cargo", "derive", "wrap_help"] }
 reqwest = { version = "0.11", features = ["blocking", "json"] }
+tokio = { version = "1", features = ["full"] }
 console = "0.15.8"
 dialoguer = "0.11.0"
 rust-embed = "8.4.0"
 serde_json = { version = "1.0.117", features = ["preserve_order"] }
 update-informer = "1.1.0"
 lazy_static = "1.4"
+dirs = "3.0"
 
 [[bin]]
 name = "elza-cli"

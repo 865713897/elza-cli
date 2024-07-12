@@ -1,9 +1,10 @@
 use anyhow::{ Ok, Result };
+use reqwest::Client;
 use std::{ process::exit, path::PathBuf, fmt };
 use console::style;
 use clap::ValueEnum;
 
-use crate::utils::logger;
+use crate::utils::{ logger, utils };
 use super::build;
 use super::select::create_list;
 use super::pack;
@@ -22,21 +23,33 @@ pub struct Dependency {
     pub mod_type: DependenciesMod,
 }
 
-pub fn create_project(project_name: String, frame_work: Option<FrameWork>) -> Result<()> {
+pub async fn create_project(project_name: String, frame_work: Option<FrameWork>) -> Result<()> {
     // 如果这个目录已经存在
     if PathBuf::from(&project_name).exists() {
         logger::error(&format!("创建失败: {:#?} 已经存在！", &project_name));
         return Ok(());
     }
-
+    let npm_registry = utils::get_user_npm_registry();
+    let latest_version = get_latest_version(env!("CARGO_PKG_NAME"), &npm_registry).await?;
     let current_version = env!("CARGO_PKG_VERSION");
-    logger::info(
-        &format!(
-            "{}{}",
-            style("elza-cli v").color256(14).bold(),
-            style(current_version).color256(14).bold()
-        )
-    );
+    if current_version != latest_version {
+        logger::info(
+            &format!(
+                "{}{}(最新版本: {})",
+                style("elza-cli v").green().bold(),
+                style(current_version).green(),
+                style(format!("v{}", latest_version)).yellow().bold()
+            )
+        );
+    } else {
+        logger::info(
+            &format!(
+                "{}{}",
+                style("elza-cli v").green().bold(),
+                style(current_version).green().bold()
+            )
+        );
+    }
 
     logger::info("开始预设项目...");
 
@@ -91,6 +104,23 @@ fn get_build_tool_with_css(build_tool: pack::BuildTool, css: CssPreset) -> Build
         (pack::BuildTool::Webpack, CssPreset::Less) => BuildToolWithCssPreset::WebpackLess,
         (pack::BuildTool::Vite, CssPreset::Sass) => BuildToolWithCssPreset::ViteSass,
         (pack::BuildTool::Vite, CssPreset::Less) => BuildToolWithCssPreset::ViteLess,
+    }
+}
+
+// 获取最新版本
+async fn get_latest_version(name: &str, npm_registry: &str) -> Result<String> {
+    // 创建一个 reqwest 客户端
+    let client = Client::new();
+    let response = client.get(format!("{}{}", npm_registry, name)).send().await?;
+    // 检查请求是否成功
+    if response.status().is_success() {
+        let body = response.text().await?;
+        // 解析 JSON 响应，获取版本信息等
+        let package_info: serde_json::Value = serde_json::from_str(&body)?;
+        let latest_version = package_info["dist-tags"]["latest"].as_str().unwrap_or("unknown");
+        return Ok(latest_version.to_string());
+    } else {
+        return Ok("".to_string());
     }
 }
 

@@ -20,8 +20,8 @@ impl BuildTool {
             BuildTool::Webpack =>
                 vec![
                     Dependency {
-                        name: "@elzajs/auto-route-plugin",
-                        version: "^0.1.6",
+                        name: "webpack-plugin-auto-routes",
+                        version: "^1.0.1",
                         mod_type: DependenciesMod::Dev,
                     },
                     Dependency {

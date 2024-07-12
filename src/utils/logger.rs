@@ -23,3 +23,7 @@ pub fn event(msg: &str) {
 pub fn full_info(msg: &str) {
     println!("{}  - {}", style("info").cyan(), style(msg).yellow());
 }
+
+pub fn warning(msg: &str) {
+    println!("{}  - {}", style("warning").yellow(), msg);
+}

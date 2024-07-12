@@ -1,6 +1,6 @@
 {
   "name": "elza-cli",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "elza-cli",
   "scripts": {
     "postinstall": "node ./install.js"
@@ -9,7 +9,7 @@
     "elza-cli": "bin/cli.js"
   },
   "optionalDependencies": {
-    "@elza-cli/darwin-arm64": "1.0.15",
-    "@elza-cli/win32-x64": "1.0.15"
+    "@elza-cli/darwin-arm64": "1.0.16",
+    "@elza-cli/win32-x64": "1.0.16"
   }
 }

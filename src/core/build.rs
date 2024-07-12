@@ -112,7 +112,7 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
     git_init(&project_dir)?;
     if config.build_tool == BuildTool::Webpack {
         logger::full_info(
-            "[你知道吗？] webpack模板内置自动生成路由插件，依赖安装完成启动项目即可生成路由文件，详见 https://github.com/865713897/auto-route-plugin#readme"
+            "[你知道吗？] webpack模板内置约定式路由插件，依赖安装完成启动项目即可生成路由文件，详见 https://github.com/865713897/webpack-plugin-auto-routes"
         );
     }
     logger::ready("项目初始化完成");
