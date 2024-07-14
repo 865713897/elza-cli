@@ -4,6 +4,7 @@ import common from './webpack.common';
 export default merge(common, {
   mode: 'development',
   devtool: 'eval-source-map',
+  stats: 'error-only',
   devServer: {
     port: 3000,
     hot: true,

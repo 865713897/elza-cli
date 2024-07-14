@@ -7,6 +7,7 @@
       "decorators": false,
       "dynamicImport": true
     },
+    "preserveAllComments": true,
     "experimental": {
       "plugins": [["swc-plugin-auto-css-module", {}]]
     },

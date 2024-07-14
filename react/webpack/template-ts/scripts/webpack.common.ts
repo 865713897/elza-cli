@@ -53,7 +53,6 @@ const baseConfig: WebpackConfiguration = {
     },
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
   },
-  stats: 'errors-only',
   cache: {
     type: 'filesystem',
     buildDependencies: {
