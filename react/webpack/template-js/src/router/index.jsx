@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { getRoutes } from './routes';
 
 export default function AppRouter() {
@@ -17,12 +17,8 @@ export default function AppRouter() {
           {renderRoutes(children)}
         </Route>
       );
-    })
-  }
-
-  if (!routes.length) {
-    return <div>Loading...</div>;
-  }
+    });
+  };
 
   return (
     <Router>
@@ -33,4 +29,3 @@ export default function AppRouter() {
     </Router>
   );
 }
-  

@@ -24,12 +24,8 @@ export default function AppRouter() {
           {renderRoutes(children)}
         </Route>
       );
-    })
-  }
-
-  if (!routes.length) {
-    return <div>Loading...</div>;
-  }
+    });
+  };
 
   return (
     <Router>
@@ -40,4 +36,3 @@ export default function AppRouter() {
     </Router>
   );
 }
-  
