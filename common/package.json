@@ -1,7 +1,6 @@
 {
   "name": "elza-demo",
   "version": "0.0.1",
-  "type": "commonjs",
   "description": "",
   "main": "",
   "scripts": {
@@ -12,7 +11,5 @@
   "author": "",
   "license": "ISC",
   "dependencies": {},
-  "devDependencies": {
-    "cross-env": "^7.0.3"
-  }
+  "devDependencies": {}
 }

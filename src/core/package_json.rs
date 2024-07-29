@@ -3,8 +3,8 @@ use serde_json::{ Value, Map };
 use std::fs;
 use std::path::PathBuf;
 use crate::logger;
+use super::build::ProjectType;
 use super::cli::DependenciesMod;
-use super::comprehensive::ComprehensiveType;
 
 pub struct PackageJson {
     project_dir: PathBuf,
@@ -14,7 +14,7 @@ pub struct PackageJson {
 #[derive(Debug, Clone)]
 pub struct PackageBasicInfo {
     pub name: String,
-    pub comprehensive_type: ComprehensiveType,
+    pub project_type: ProjectType,
 }
 
 impl PackageJson {
@@ -31,34 +31,49 @@ impl PackageJson {
 
     pub fn update_basic(&mut self, basic_info: PackageBasicInfo) -> Result<()> {
         self.json["name"] = Value::String(basic_info.name);
-        match basic_info.comprehensive_type {
-            ComprehensiveType::WebpackReactJs => {
-                self.json["scripts"]["start"] = Value::String(
-                    "cross-env NODE_ENV=development webpack-dev-server --config ./scripts/webpack.dev.js".to_string()
-                );
-                self.json["scripts"]["build"] = Value::String(
-                    "cross-env NODE_ENV=production webpack --config ./scripts/webpack.prod.js".to_string()
-                );
-            }
-            ComprehensiveType::WebpackReactTs => {
-                self.json["scripts"]["start"] = Value::String(
-                    "cross-env NODE_ENV=development webpack-dev-server --config ./scripts/webpack.dev.ts".to_string()
-                );
-                self.json["scripts"]["build"] = Value::String(
-                    "cross-env NODE_ENV=production webpack --config ./scripts/webpack.prod.ts".to_string()
+        match basic_info.project_type {
+            ProjectType::WebpackReactJs => {
+                set_scripts(
+                    &mut self.json,
+                    "cross-env NODE_ENV=development webpack-dev-server --config ./scripts/webpack.dev.js",
+                    "cross-env NODE_ENV=production webpack --config ./scripts/webpack.prod.js",
+                    None
                 );
             }
-            ComprehensiveType::ViteReactJs => {
+            ProjectType::WebpackReactTs => {
+                set_scripts(
+                    &mut self.json,
+                    "cross-env NODE_ENV=development webpack-dev-server --config ./scripts/webpack.dev.ts",
+                    "cross-env NODE_ENV=production webpack --config ./scripts/webpack.prod.ts",
+                    None
+                );
+            }
+            ProjectType::ViteReactJs => {
                 self.json["type"] = Value::String("module".to_string());
-                self.json["scripts"]["start"] = Value::String("vite".to_string());
-                self.json["scripts"]["build"] = Value::String("vite build".to_string());
-                self.json["scripts"]["preview"] = Value::String("vite preview".to_string());
+                set_scripts(&mut self.json, "vite", "vite build", Some("vite preview"));
             }
-            ComprehensiveType::ViteReactTs => {
+            ProjectType::ViteReactTs => {
                 self.json["type"] = Value::String("module".to_string());
-                self.json["scripts"]["start"] = Value::String("vite".to_string());
-                self.json["scripts"]["build"] = Value::String("tsc -b && vite build".to_string());
-                self.json["scripts"]["preview"] = Value::String("vite preview".to_string());
+                set_scripts(&mut self.json, "vite", "vite build", Some("vite preview"));
+            }
+            ProjectType::RspackReactJs => {
+                set_scripts(
+                    &mut self.json,
+                    "rsbuild dev",
+                    "rsbuild build",
+                    Some("rsbuild preview")
+                );
+            }
+            ProjectType::RspackReactTs => {
+                set_scripts(
+                    &mut self.json,
+                    "rsbuild dev",
+                    "rsbuild build",
+                    Some("rsbuild preview")
+                );
+            }
+            ProjectType::FarmReact => {
+                set_scripts(&mut self.json, "farm start", "farm build", Some("farm preview"));
             }
         }
         Ok(())
@@ -133,5 +148,13 @@ fn sort_map(json_value: &mut Value) {
             sorted_map.insert(key.clone(), sorted_value);
         }
         *map = sorted_map;
+    }
+}
+
+fn set_scripts(json_value: &mut Value, start: &str, build: &str, preview: Option<&str>) {
+    json_value["scripts"]["start"] = Value::String(start.to_string());
+    json_value["scripts"]["build"] = Value::String(build.to_string());
+    if let Some(preview_script) = preview {
+        json_value["scripts"]["preview"] = Value::String(preview_script.to_string());
     }
 }

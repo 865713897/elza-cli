@@ -20,7 +20,7 @@ const getStyleLoader = (openCssModule = false) => {
     isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
     'css-loader',
     'postcss-loader',
-    'sass-loader',
+    '`placeholder:0`',
   ];
   if (openCssModule) {
     loader[1] = {
@@ -67,7 +67,7 @@ const baseConfig: WebpackConfiguration = {
     rules: [
       {
         test: /\.(j|t)sx?$/,
-        use: 'babel-loader',
+        use: '`placeholder:2`',
         exclude: /node_modules/,
       },
       {
@@ -80,7 +80,7 @@ const baseConfig: WebpackConfiguration = {
         exclude: /node_modules/,
       },
       {
-        test: /\.scss$/,
+        test: /\.`placeholder:1`$/,
         oneOf: [
           {
             resourceQuery: /css_modules/,

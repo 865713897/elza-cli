@@ -12,7 +12,7 @@ const getStyleLoader = (openCssModule = false) => {
     isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
     'css-loader',
     'postcss-loader',
-    'sass-loader',
+    '`placeholder:0`',
   ];
   if (openCssModule) {
     loader[1] = {
@@ -55,9 +55,9 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.(js|jsx)$/,
+        test: /\.(j|t)sx?$/,
         use: {
-          loader: 'babel-loader',
+          loader: '`placeholder:2`',
         },
         exclude: /node_modules/,
       },
@@ -71,7 +71,7 @@ module.exports = {
         exclude: /node_modules/,
       },
       {
-        test: /\.scss$/,
+        test: /\.`placeholder:1`$/,
         oneOf: [
           {
             resourceQuery: /css_modules/,

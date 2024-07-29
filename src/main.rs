@@ -12,11 +12,12 @@ use clap::{
     ValueEnum,
 };
 use crate::utils::logger;
+use crate::core::pack::PackTool;
 use crate::core::cli::{ create_project, FrameWork };
 
 lazy_static! {
     static ref CUSTOM_HELP: String = format!(
-        "{} {} {}\n\n{}\n    {}           项目名称\n\n{}\n    {}           创建一个新项目\n\n{}\n    {}      项目框架 [可选值: {}]\n    {}    版本信息\n    {}       输出帮助信息",
+        "{} {} {}\n\n{}\n    {}           项目名称\n\n{}\n    {}           创建一个新项目\n\n{}\n    {}   项目模板 [可选值: {}]\n    {}      项目框架 [可选值: {}]\n    {}    版本信息\n    {}       输出帮助信息",
         style("Usage").yellow(),
         style("elza-cli create").cyan(),
         style("[Options] [Name]").blue(),
@@ -25,6 +26,8 @@ lazy_static! {
         style("Command:").yellow(),
         style("create").cyan(),
         style("Options:").yellow(),
+        style("-t, --template").cyan(),
+        get_possible_template_values(),
         style("-f, --frame").cyan(),
         get_possible_frame_values(),
         style("-V, --version").cyan(),
@@ -47,6 +50,16 @@ enum Commands {
         #[arg(help = "项目名称", value_hint = ValueHint::DirPath, ignore_case = true)]
         name: Option<String>,
 
+        #[arg(
+            help = "项目模板",
+            short = 't',
+            long = "template",
+            value_name = "模板",
+            value_parser = EnumValueParser::<PackTool>::new(),
+            ignore_case = true
+        )]
+        template: Option<PackTool>,
+        
         #[arg(
             help = "项目框架",
             short = 'f',
@@ -80,13 +93,13 @@ fn run() -> Result<()> {
         // 如果匹配到了字段
         Some(command) => {
             match command {
-                Commands::Create { name, frame_work } => {
+                Commands::Create { name, template, frame_work } => {
                     // 执行创建项目的逻辑
                     match name {
                         Some(project_name) => {
                             let rt: Runtime = Runtime::new()?;
                             rt.block_on(async {
-                                create_project(project_name, frame_work).await?;
+                                create_project(project_name, template,frame_work).await?;
                                 Ok(())
                             })?;
                         }
@@ -129,6 +142,16 @@ fn handle_parse_error(e: clap::Error) {
         }
     }
     std::process::exit(1);
+}
+
+// 获取模板可能的值
+fn get_possible_template_values() -> String {
+    let mut possible_values = Vec::new();
+    for template in PackTool::value_variants() {
+        possible_values.push(template.to_string().to_lowercase());
+    }
+    let joined_strings = possible_values.join(",");
+    joined_strings
 }
 
 // 获取框架可能的值

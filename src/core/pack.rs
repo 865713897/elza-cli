@@ -1,5 +1,6 @@
 use anyhow::{ Ok, Result };
 use std::process::exit;
+use std::fmt;
 use clap::ValueEnum;
 
 use crate::utils::logger;
@@ -8,20 +9,32 @@ use super::cli::{ Dependency, DependenciesMod };
 
 // 打包工具
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
-pub enum BuildTool {
+pub enum PackTool {
     Webpack,
     Vite,
-    // Rspack,
+    Rspack,
+    Farm,
 }
 
-impl BuildTool {
+impl fmt::Display for PackTool {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PackTool::Webpack => write!(f, "webpack"),
+            PackTool::Vite => write!(f, "vite"),
+            PackTool::Rspack => write!(f, "rspack"),
+            PackTool::Farm => write!(f, "farm"),
+        }
+    }
+}
+
+impl PackTool {
     pub fn get_dependencies(&self) -> Vec<Dependency> {
         match self {
-            BuildTool::Webpack =>
+            PackTool::Webpack =>
                 vec![
                     Dependency {
                         name: "webpack-plugin-auto-routes",
-                        version: "^1.0.2",
+                        version: "^1.0.3",
                         mod_type: DependenciesMod::Dev,
                     },
                     Dependency {
@@ -32,6 +45,11 @@ impl BuildTool {
                     Dependency {
                         name: "copy-webpack-plugin",
                         version: "^12.0.2",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "cross-env",
+                        version: "^7.0.3",
                         mod_type: DependenciesMod::Dev,
                     },
                     Dependency {
@@ -95,28 +113,74 @@ impl BuildTool {
                         mod_type: DependenciesMod::Dev,
                     }
                 ],
-            BuildTool::Vite =>
+            PackTool::Vite =>
                 vec![Dependency {
                     name: "vite",
                     version: "^5.3.1",
                     mod_type: DependenciesMod::Dev,
                 }],
-            // BuildTool::Rspack => vec![],
+            PackTool::Rspack =>
+                vec![
+                    Dependency {
+                        name: "@rsbuild/core",
+                        version: "1.0.1-beta.1",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "webpack-plugin-auto-routes",
+                        version: "1.0.3",
+                        mod_type: DependenciesMod::Dev,
+                    }
+                ],
+            PackTool::Farm =>
+                vec![
+                    Dependency {
+                        name: "@farmfe/cli",
+                        version: "^1.0.2",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "@farmfe/core",
+                        version: "^1.3.0",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "@farmfe/plugin-react",
+                        version: "^1.2.0",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "core-js",
+                        version: "^3.36.1",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "react-refresh",
+                        version: "^0.14.0",
+                        mod_type: DependenciesMod::Dev,
+                    }
+                ],
         }
     }
 }
 
-pub fn build_tool_selector() -> Result<BuildTool> {
-    logger::pick("请选择打包工具");
-    let items = vec!["webpack", "vite", "rspack"];
-    let selection = create_list(&items, 0)?;
-    match selection {
-        0 => Ok(BuildTool::Webpack),
-        1 => Ok(BuildTool::Vite),
-        // 2 => Ok(BuildTool::Rspack),
-        _ => {
-            logger::error(&format!("暂不支持: {}", &items[selection]));
-            exit(1);
+pub fn pack_tool_selector(template: Option<PackTool>) -> Result<PackTool> {
+    match template {
+        Some(t) => Ok(t),
+        None => {
+            logger::pick("请选择打包工具");
+            let items = vec!["webpack", "vite", "rspack", "farm"];
+            let selection = create_list(&items, 0)?;
+            match selection {
+                0 => Ok(PackTool::Webpack),
+                1 => Ok(PackTool::Vite),
+                2 => Ok(PackTool::Rspack),
+                3 => Ok(PackTool::Farm),
+                _ => {
+                    logger::error(&format!("暂不支持: {}", &items[selection]));
+                    exit(1);
+                }
+            }
         }
     }
 }
