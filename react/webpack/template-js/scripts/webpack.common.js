@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const AutoRoutePlugin = require('webpack-plugin-auto-routes');
-const WebpackBar = require('webpackbar');
+const BetterInfoPlugin = require('webpack-plugin-better-info');
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -134,10 +134,7 @@ module.exports = {
         },
       ],
     }),
-    new WebpackBar({
-      name: 'webpack',
-      color: '#41b883',
-    }),
+    new BetterInfoPlugin({}),
     !isDev &&
       new MiniCssExtractPlugin({
         filename: 'static/css/[name].[contenthash:8].css',

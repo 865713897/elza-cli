@@ -6,6 +6,7 @@ import CopyPlugin from 'copy-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import WebpackBar from 'webpackbar';
 import AutoRoutePlugin from 'webpack-plugin-auto-routes';
+import BetterInfoPlugin from 'webpack-plugin-better-info';
 
 interface WebpackDevServerConfiguration {
   devServer?: DevServerConfiguration;
@@ -145,10 +146,7 @@ const baseConfig: WebpackConfiguration = {
         },
       ],
     }),
-    new WebpackBar({
-      name: 'webpack',
-      color: '#41b883',
-    }),
+    new BetterInfoPlugin({}),
     !isDev &&
       new MiniCssExtractPlugin({
         filename: 'static/css/[name].[contenthash:8].css',

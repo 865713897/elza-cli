@@ -25,5 +25,5 @@ pub fn full_info(msg: &str) {
 }
 
 pub fn warning(msg: &str) {
-    println!("{}  - {}", style("warning").yellow(), msg);
+    println!("{}  - {}", style("warn").yellow(), msg);
 }

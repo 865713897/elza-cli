@@ -94,12 +94,12 @@ pub fn compare_versions(current_version: &str, latest_version: &str) {
 // 输出版本号
 fn print_version(current_version: &str, latest_version: &str) {
     let borders = Borders {
-        tl: &format!("{}", style("╔").yellow()),
-        tr: &format!("{}", style("╗").yellow()),
-        bl: &format!("{}", style("╚").yellow()),
-        br: &format!("{}", style("╝").yellow()),
-        h: &format!("{}", style("═").yellow()),
-        v: &format!("{}", style("║").yellow()),
+        tl: &format!("{}", style("┌").yellow()),
+        tr: &format!("{}", style("┐").yellow()),
+        bl: &format!("{}", style("└").yellow()),
+        br: &format!("{}", style("┘").yellow()),
+        h: &format!("{}", style("─").yellow()),
+        v: &format!("{}", style("│").yellow()),
     };
     let header = format!("{}", style("  发现新版本!  ").green());
     let footer = format!("  请使用 `{}` 更新  ", style("npm install -g elza-cli").magenta());

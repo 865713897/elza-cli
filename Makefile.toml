@@ -14,6 +14,14 @@ script = [
   'mv ./target/x86_64-pc-windows-gnu/release/elza-cli.exe ./npm/@elza-cli/win32-x64/bin/elza-cli.exe',
 ]
 
+[tasks.build-linux-x64]
+script_runner = "bash"
+script = [
+  'cargo build --release --target=x86_64-unknown-linux-gnu',
+  'mkdir -p ./npm/@elza-cli/linux-x64/bin',
+  'mv ./target/x86_64-unknown-linux-gnu/release/elza-cli ./npm/@elza-cli/linux-x64/bin/elza-cli',
+]
+
 [tasks.update-version]
 script = ["node ./scripts/update-version.js"]
 

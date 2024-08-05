@@ -38,6 +38,11 @@ impl PackTool {
                         mod_type: DependenciesMod::Dev,
                     },
                     Dependency {
+                        name: "webpack-plugin-better-info",
+                        version: "^0.0.4",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
                         name: "autoprefixer",
                         version: "^10.4.19",
                         mod_type: DependenciesMod::Dev,
@@ -105,11 +110,6 @@ impl PackTool {
                     Dependency {
                         name: "webpack-merge",
                         version: "^5.10.0",
-                        mod_type: DependenciesMod::Dev,
-                    },
-                    Dependency {
-                        name: "webpackbar",
-                        version: "^6.0.1",
                         mod_type: DependenciesMod::Dev,
                     }
                 ],

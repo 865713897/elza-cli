@@ -12,7 +12,7 @@ async function publishPackage(dirPath, version) {
     logger.ready(
       `发布 ${style(dirPath.replace('npm/', '')).green()}${style(`@${version}`)
         .green()
-        .bold()} 完成`
+        .bold()} 成功`
     );
   } catch (error) {
     logger.error(`发布 ${dirPath} 失败: ${error.message}`);

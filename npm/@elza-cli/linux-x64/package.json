@@ -1,10 +1,10 @@
 {
-  "name": "@elza-cli/darwin-arm64",
+  "name": "@elza-cli/linux-x64",
   "version": "1.0.21",
-  "description": "The macOS ARM 64-bit binary for elza-cli",
+  "description": "The linux 64-bit binary for elza-cli",
   "keywords": [
     "elza-cli",
-    "windows"
+    "linux"
   ],
   "license": "MIT",
   "os": [
