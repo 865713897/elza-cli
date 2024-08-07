@@ -1,8 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const { execSync } = require('child_process');
 const https = require('https');
 const { logger } = require('./logger');
+
+console.log('install.js script started'); // Debug log
 
 // 平台-二进制文件对照表
 const optionalDependencies = require('./package.json').optionalDependencies;
@@ -28,11 +31,23 @@ const platformBinaryName =
 // 计算备用二进制文件路径
 const fallbackBinaryPath = path.join(__dirname, binaryName);
 
+// 获取全局安装路径
+function getGlobalNodeModulesPath() {
+  const globalNodeModulesPath = execSync('npm root -g').toString().trim();
+  return globalNodeModulesPath;
+}
+
+// 计算全局安装路径下的二进制文件路径
+const globalBinaryPath = path.join(getGlobalNodeModulesPath(), binaryName);
+
 // 创建http请求promise
-function makeRequest(url) {
+function makeRequest(url, retries = 3, timeout = 5000) {
   return new Promise((resolve, reject) => {
-    https
-      .get(url, (response) => {
+    let attempts = 0;
+    function request() {
+      attempts++;
+      let handled = false; // 标记是否已经处理过
+      const req = https.get(url, (response) => {
         if (response.statusCode >= 200 && response.statusCode < 300) {
           const chunks = [];
           response.on('data', (chunk) => chunks.push(chunk));
@@ -45,20 +60,47 @@ function makeRequest(url) {
           response.headers.location
         ) {
           // 重定向
-          makeRequest(response.headers.location).then(resolve).catch(reject);
+          makeRequest(response.headers.location, retries, timeout)
+            .then(resolve)
+            .catch(reject);
         } else {
-          reject(
-            new Error(
-              `HTTP request failed with status code ${response.statusCode}`
-            )
-          );
+          handleRetry();
         }
-      })
-      .on('error', (error) => {
-        reject(error);
       });
+      req.on('error', () => {
+        if (!handled) {
+          handled = true;
+          handleRetry();
+        }
+      });
+      req.setTimeout(timeout, () => {
+        if (!handled) {
+          handled = true;
+          req.abort();
+          handleRetry();
+        }
+      });
+    }
+
+    function handleRetry() {
+      if (attempts < retries) {
+        logger.warn('获取版本失败, 重试中...');
+        setTimeout(request, 1000);
+      } else {
+        reject();
+      }
+    }
+
+    request();
   });
 }
+
+// 获取用户npm源
+function getUserNpmRegistry() {
+  return execSync('npm config get registry').toString().trim();
+}
+
+const npmRegistry = getUserNpmRegistry() || 'https://registry.npmjs.org/';
 
 // 从tarball中提取文件
 function extractFileFromTarball(tarballBuffer, filepath) {
@@ -88,7 +130,7 @@ async function downloadBinary(version) {
   try {
     const packageName = platformBinaryName.replace('@elza-cli/', '');
     const tarballDownloadBuffer = await makeRequest(
-      `https://registry.npmjs.org/${platformBinaryName}/-/${packageName}-${version}.tgz`
+      `${npmRegistry}${platformBinaryName}/-/${packageName}-${version}.tgz`
     );
     logger.info('二进制文件下载完成');
     logger.event('开始解压二进制文件');
@@ -100,18 +142,24 @@ async function downloadBinary(version) {
     );
     fs.writeFileSync(fallbackBinaryPath, binaryBuffer, { mode: 0o755 });
     logger.ready('已完成下载');
-  } catch (error) {
-    logger.error(`二进制文件下载失败: ${error.message}`);
+    process.exit(0);
+  } catch (_) {
+    logger.error('二进制文件下载失败');
     process.exit(1);
   }
 }
 
 // 获取最新版本
 async function getLatestVersion(packageName) {
-  const url = `https://registry.npmjs.org/${packageName}`;
-  const data = await makeRequest(url);
-  const packageInfo = JSON.parse(data.toString('utf8'));
-  return packageInfo['dist-tags'].latest;
+  const url = `${npmRegistry}${packageName}`;
+  try {
+    const data = await makeRequest(url);
+    const packageInfo = JSON.parse(data.toString('utf8'));
+    return packageInfo['dist-tags'].latest;
+  } catch (_) {
+    logger.error(`获取最新版本失败, 请检查网络或更改npm镜像源`);
+    process.exit(1);
+  }
 }
 
 // 检查并下载新版本
@@ -127,12 +175,7 @@ async function checkAndUpdate() {
 
 // 检查是否已经安装过
 function isPlatformSpecificPackageInstalled() {
-  try {
-    require.resolve(`${platformBinaryName}/bin/${binaryName}`);
-    return true;
-  } catch (err) {
-    return false;
-  }
+  return fs.existsSync(globalBinaryPath);
 }
 
 // 如果不支持，抛出错误
