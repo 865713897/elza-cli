@@ -1,7 +1,8 @@
+// @ts-nocheck
 import React, { Suspense } from 'react';
-    
-function withLazyLoad(LazyComponent) {
-  const lazyComponentWrapper = (props) => (
+
+function withLazyLoad<P>(LazyComponent: React.ComponentType<P>) {
+  const lazyComponentWrapper: React.FC<P> = (props) => (
     <Suspense fallback={<div>Loading...</div>}>
       <LazyComponent {...props} />
     </Suspense>
@@ -15,7 +16,7 @@ export function getRoutes() {
     {
       path: '/home',
       name: 'home',
-      Component: withLazyLoad(React.lazy(() => import(/* webpackChunkName: "src__pages__home__index" */ '../pages/home/index.jsx'))),
+      Component: withLazyLoad(React.lazy(() => import(/* webpackChunkName: "src__pages__home__index" */ '../pages/home/index.tsx'))),
       children: []
     }
   ];

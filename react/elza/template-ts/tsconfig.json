@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2015",
+    "lib": ["es2015", "DOM"],
+    "sourceMap": true,
+    "noImplicitAny": false,
+    "baseUrl": ".",
+    "jsx": "react",
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "allowJs": false,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "strictNullChecks": true,
+    "resolveJsonModule": true,
+    "strict": true,
+    "types": ["node"],
+  },
+  "include": ["src/**/*", "typings.d.ts"],
+  "exclude": ["node_modules", "build", "dist", "scripts", "webpack", "jest"]
+}

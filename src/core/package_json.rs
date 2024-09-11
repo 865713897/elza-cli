@@ -1,10 +1,10 @@
-use anyhow::{ Ok, Result };
-use serde_json::{ Value, Map };
-use std::fs;
-use std::path::PathBuf;
-use crate::logger;
 use super::build::ProjectType;
 use super::cli::DependenciesMod;
+use crate::logger;
+use anyhow::{ Ok, Result };
+use serde_json::{ Map, Value };
+use std::fs;
+use std::path::PathBuf;
 
 pub struct PackageJson {
     project_dir: PathBuf,
@@ -75,6 +75,14 @@ impl PackageJson {
             ProjectType::FarmReact => {
                 set_scripts(&mut self.json, "farm start", "farm build", Some("farm preview"));
             }
+            ProjectType::ElzaReactJs => {
+                self.json["type"] = Value::String("module".to_string());
+                set_scripts(&mut self.json, "elza dev", "elza build", None);
+            }
+            ProjectType::ElzaReactTs => {
+                self.json["type"] = Value::String("module".to_string());
+                set_scripts(&mut self.json, "elza dev", "elza build", None);
+            }
         }
         Ok(())
     }
@@ -94,9 +102,9 @@ impl PackageJson {
             .as_object_mut()
             .and_then(|obj| obj.get_mut(dev_or_prod))
             .and_then(|value| value.as_object_mut())
-            .ok_or_else(||
+            .ok_or_else(|| {
                 anyhow::anyhow!("'{}' field not found or is not an object", dev_or_prod)
-            )?;
+            })?;
         deps.insert(dependency_name.to_string(), Value::String(dependency_version.to_string()));
 
         Ok(())

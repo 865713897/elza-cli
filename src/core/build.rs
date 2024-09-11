@@ -1,21 +1,15 @@
-use std::path::PathBuf;
-use std::{ fs, vec };
-use std::process::{ Command, Stdio, exit };
-use anyhow::{ Result, Ok };
+use anyhow::{ Ok, Result };
 use rust_embed::RustEmbed;
+use std::path::PathBuf;
+use std::process::{ exit, Command, Stdio };
+use std::{ fs, vec };
 
-use crate::utils::logger;
 use crate::utils::error::{ handle_option, handle_result };
+use crate::utils::logger;
 
-use super::package_json::{ PackageJson, PackageBasicInfo };
+use super::cli::{ CodeLanguage, CssPreset, Dependency, FrameWork, JsLoader };
 use super::pack::PackTool;
-use super::cli::{
-    Dependency,
-    FrameWork,
-    CodeLanguage,
-    JsLoader,
-    CssPreset,
-};
+use super::package_json::{ PackageBasicInfo, PackageJson };
 
 #[derive(Clone, Copy)]
 pub struct InlineConfig {
@@ -60,6 +54,14 @@ struct RspackReactTsTemplate;
 #[folder = "react/farm"]
 struct FarmReactTemplate;
 
+#[derive(RustEmbed)]
+#[folder = "react/elza/template-js"]
+struct ElzaReactJsTemplate;
+
+#[derive(RustEmbed)]
+#[folder = "react/elza/template-ts"]
+struct ElzaReactTsTemplate;
+
 #[derive(Clone)]
 enum TemplateType {
     WebpackReactJsDir,
@@ -69,6 +71,8 @@ enum TemplateType {
     RspackReactJsDir,
     RspackReactTsDir,
     FarmReactDir,
+    ElzaReactJsDir,
+    ElzaReactTsDir,
     CommonDir,
 }
 
@@ -81,6 +85,8 @@ pub enum ProjectType {
     RspackReactJs,
     RspackReactTs,
     FarmReact,
+    ElzaReactJs,
+    ElzaReactTs,
 }
 
 // 项目初始化
@@ -103,11 +109,12 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
         PackTool::Webpack => {
             update_webpack_rules(&project_dir, config)?;
         }
-        PackTool::Rspack => {
+        PackTool::Rsbuild => {
             update_rsbuild_config(&project_dir, config)?;
         }
         PackTool::Vite => {}
         PackTool::Farm => {}
+        PackTool::Elza => {}
     }
     let mut pj = PackageJson::new(&project_dir)?;
     // 更新package.json基本信息
@@ -135,7 +142,7 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
     pj.write()?;
     logger::info("预设依赖项添加完成");
     git_init(&project_dir)?;
-    if config.pack_tool == PackTool::Webpack || config.pack_tool == PackTool::Rspack {
+    if config.pack_tool == PackTool::Webpack || config.pack_tool == PackTool::Rsbuild {
         logger::full_info(
             &format!(
                 "[你知道吗？] {:?}模板内置约定式路由插件，依赖安装完成启动项目即可生成路由文件，详见 https://github.com/865713897/webpack-plugin-auto-routes",
@@ -156,6 +163,8 @@ fn get_template_type(project_type: ProjectType) -> TemplateType {
         ProjectType::RspackReactJs => TemplateType::RspackReactJsDir,
         ProjectType::RspackReactTs => TemplateType::RspackReactTsDir,
         ProjectType::FarmReact => TemplateType::FarmReactDir,
+        ProjectType::ElzaReactJs => TemplateType::ElzaReactJsDir,
+        ProjectType::ElzaReactTs => TemplateType::ElzaReactTsDir,
     }
 }
 
@@ -166,9 +175,11 @@ fn get_project_type(pack_tool: PackTool, frame: FrameWork, lang: CodeLanguage) -
         (PackTool::Webpack, FrameWork::React, CodeLanguage::Ts) => ProjectType::WebpackReactTs,
         (PackTool::Vite, FrameWork::React, CodeLanguage::Js) => ProjectType::ViteReactJs,
         (PackTool::Vite, FrameWork::React, CodeLanguage::Ts) => ProjectType::ViteReactTs,
-        (PackTool::Rspack, FrameWork::React, CodeLanguage::Js) => ProjectType::RspackReactJs,
-        (PackTool::Rspack, FrameWork::React, CodeLanguage::Ts) => ProjectType::RspackReactTs,
+        (PackTool::Rsbuild, FrameWork::React, CodeLanguage::Js) => ProjectType::RspackReactJs,
+        (PackTool::Rsbuild, FrameWork::React, CodeLanguage::Ts) => ProjectType::RspackReactTs,
         (PackTool::Farm, FrameWork::React, _) => ProjectType::FarmReact,
+        (PackTool::Elza, FrameWork::React, CodeLanguage::Js) => ProjectType::ElzaReactJs,
+        (PackTool::Elza, FrameWork::React, CodeLanguage::Ts) => ProjectType::ElzaReactTs,
     }
 }
 
@@ -196,6 +207,8 @@ fn copy_template_files(
         TemplateType::RspackReactJsDir => Box::new(RspackReactJsTemplate::iter()),
         TemplateType::RspackReactTsDir => Box::new(RspackReactTsTemplate::iter()),
         TemplateType::FarmReactDir => Box::new(FarmReactTemplate::iter()),
+        TemplateType::ElzaReactJsDir => Box::new(ElzaReactJsTemplate::iter()),
+        TemplateType::ElzaReactTsDir => Box::new(ElzaReactTsTemplate::iter()),
         TemplateType::CommonDir => Box::new(Common::iter()),
     };
     for filename in template_iter {
@@ -228,6 +241,8 @@ fn copy_template_file(
             TemplateType::RspackReactJsDir => RspackReactJsTemplate::get(filename),
             TemplateType::RspackReactTsDir => RspackReactTsTemplate::get(filename),
             TemplateType::FarmReactDir => FarmReactTemplate::get(filename),
+            TemplateType::ElzaReactJsDir => ElzaReactJsTemplate::get(filename),
+            TemplateType::ElzaReactTsDir => ElzaReactTsTemplate::get(filename),
             TemplateType::CommonDir => Common::get(filename),
         },
         &format!("获取模板文件内容失败: {}", filename)
@@ -282,6 +297,7 @@ fn update_webpack_rules(project_dir: &PathBuf, config: InlineConfig) -> Result<(
     let mut replace_vec = match config.css {
         CssPreset::Sass => vec!["sass-loader", "scss"],
         CssPreset::Less => vec!["less-loader", "less"],
+        _ => vec![],
     };
     match config.loader {
         JsLoader::Babel => replace_vec.push("babel-loader"),
@@ -308,6 +324,7 @@ fn update_rsbuild_config(project_dir: &PathBuf, config: InlineConfig) -> Result<
             vec!["import { pluginSass } from '@rsbuild/plugin-sass';", "pluginSass()"],
         CssPreset::Less =>
             vec!["import { pluginLess } from '@rsbuild/plugin-less';", "pluginLess()"],
+        CssPreset::None => vec![],
     };
     for (i, item) in replace_vec.iter().enumerate() {
         content = content.replace(&format!("`placeholder:{i}`"), item);
