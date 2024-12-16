@@ -4,7 +4,6 @@ import { Configuration as DevServerConfiguration } from 'webpack-dev-server';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import CopyPlugin from 'copy-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import WebpackBar from 'webpackbar';
 import AutoRoutePlugin from 'webpack-plugin-auto-routes';
 import BetterInfoPlugin from 'webpack-plugin-better-info';
 
@@ -128,7 +127,6 @@ const baseConfig: WebpackConfiguration = {
     }),
     new AutoRoutePlugin({
       routingMode: 'hash',
-      onlyRoutes: false,
       indexPath: '/home',
     }),
     new DefinePlugin({

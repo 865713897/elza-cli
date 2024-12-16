@@ -119,7 +119,6 @@ module.exports = {
     }),
     new AutoRoutePlugin({
       routingMode: 'hash',
-      onlyRoutes: false,
       indexPath: '/home',
     }),
     new CopyPlugin({

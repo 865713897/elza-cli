@@ -1,13 +1,13 @@
-use anyhow::{Ok, Result};
+use anyhow::{ Ok, Result };
 use clap::ValueEnum;
 use console::style;
-use std::{fmt, path::PathBuf, process::exit};
-use tokio::{join, spawn};
+use std::{ fmt, path::PathBuf, process::exit };
+use tokio::{ join, spawn };
 
 use super::build;
 use super::pack;
 use super::select::create_list;
-use crate::utils::{logger, utils};
+use crate::utils::{ logger, utils };
 
 #[derive(Copy, Clone, Debug)]
 pub enum DependenciesMod {
@@ -25,14 +25,12 @@ pub struct Dependency {
 pub async fn create_project(
     project_name: String,
     template: Option<pack::PackTool>,
-    frame_work: Option<FrameWork>,
+    frame_work: Option<FrameWork>
 ) -> Result<()> {
     let current_version = env!("CARGO_PKG_VERSION");
-    logger::info(&format!(
-        "{}{}",
-        style("elza-cli v").green().bold(),
-        style(current_version).green().bold()
-    ));
+    logger::info(
+        &format!("{}{}", style("elza-cli v").green().bold(), style(current_version).green().bold())
+    );
     // 如果这个目录已经存在
     if PathBuf::from(&project_name).exists() {
         logger::error(&format!("创建失败: {:#?} 已经存在！", &project_name));
@@ -41,8 +39,9 @@ pub async fn create_project(
     logger::info("开始预设项目...");
 
     // 获取最新版本
-    let latest_version_future =
-        spawn(async move { utils::get_latest_version(env!("CARGO_PKG_NAME")).await });
+    let latest_version_future = spawn(async move {
+        utils::get_latest_version(env!("CARGO_PKG_NAME")).await
+    });
 
     let config_future = spawn(async move {
         let frame = frame_selector(frame_work)?;
@@ -57,19 +56,17 @@ pub async fn create_project(
         };
         let css = match pack_tool {
             pack::PackTool::Elza => CssPreset::None,
-            _ => css_selector()?
+            _ => css_selector()?,
         };
-        build::start(
-            project_name.as_str(),
-            build::InlineConfig {
+        build
+            ::start(project_name.as_str(), build::InlineConfig {
                 frame,
                 pack_tool,
                 lang,
                 loader,
                 css,
-            },
-        )
-        .map_err(|e| anyhow::anyhow!(e))
+            })
+            .map_err(|e| anyhow::anyhow!(e))
     });
 
     let (latest_version_result, _) = join!(latest_version_future, config_future);
@@ -96,23 +93,29 @@ impl fmt::Display for FrameWork {
 impl FrameWork {
     pub fn get_dependencies(&self) -> Vec<Dependency> {
         match self {
-            FrameWork::React => vec![
-                Dependency {
-                    name: "react",
-                    version: "^18.2.0",
-                    mod_type: DependenciesMod::Prod,
-                },
-                Dependency {
-                    name: "react-dom",
-                    version: "^18.2.0",
-                    mod_type: DependenciesMod::Prod,
-                },
-                Dependency {
-                    name: "react-router-dom",
-                    version: "^6.23.1",
-                    mod_type: DependenciesMod::Prod,
-                },
-            ],
+            FrameWork::React =>
+                vec![
+                    Dependency {
+                        name: "axios",
+                        version: "^1.7.9",
+                        mod_type: DependenciesMod::Prod,
+                    },
+                    Dependency {
+                        name: "react",
+                        version: "^18.2.0",
+                        mod_type: DependenciesMod::Prod,
+                    },
+                    Dependency {
+                        name: "react-dom",
+                        version: "^18.2.0",
+                        mod_type: DependenciesMod::Prod,
+                    },
+                    Dependency {
+                        name: "react-router-dom",
+                        version: "^6.23.1",
+                        mod_type: DependenciesMod::Prod,
+                    }
+                ],
         }
     }
 }
@@ -146,7 +149,7 @@ impl CodeLanguage {
     pub fn get_dependencies(
         &self,
         build_tool: pack::PackTool,
-        frame: FrameWork,
+        frame: FrameWork
     ) -> Vec<Dependency> {
         let common = vec![
             Dependency {
@@ -158,76 +161,82 @@ impl CodeLanguage {
                 name: "@types/react-dom",
                 version: "^18.3.0",
                 mod_type: DependenciesMod::Dev,
-            },
+            }
         ];
         let mut dependencies = match (self, build_tool, frame) {
             (CodeLanguage::Js, pack::PackTool::Webpack, FrameWork::React) => vec![],
-            (CodeLanguage::Ts, pack::PackTool::Webpack, FrameWork::React) => vec![
-                Dependency {
-                    name: "@babel/preset-typescript",
-                    version: "^7.24.1",
-                    mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "@types/node",
-                    version: "^20.12.12",
-                    mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "@types/webpack",
-                    version: "^5.28.5",
-                    mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "ts-node",
-                    version: "^10.9.2",
-                    mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "typescript",
-                    version: "^5.5.2",
-                    mod_type: DependenciesMod::Dev,
-                },
-            ],
-            (CodeLanguage::Js, pack::PackTool::Vite, FrameWork::React) => vec![Dependency {
-                name: "@vitejs/plugin-react",
-                version: "^4.3.1",
-                mod_type: DependenciesMod::Dev,
-            }],
-            (CodeLanguage::Ts, pack::PackTool::Vite, FrameWork::React) => vec![
-                Dependency {
+            (CodeLanguage::Ts, pack::PackTool::Webpack, FrameWork::React) =>
+                vec![
+                    Dependency {
+                        name: "@babel/preset-typescript",
+                        version: "^7.24.1",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "@types/node",
+                        version: "^20.12.12",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "@types/webpack",
+                        version: "^5.28.5",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "ts-node",
+                        version: "^10.9.2",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "typescript",
+                        version: "^5.5.2",
+                        mod_type: DependenciesMod::Dev,
+                    }
+                ],
+            (CodeLanguage::Js, pack::PackTool::Vite, FrameWork::React) =>
+                vec![Dependency {
                     name: "@vitejs/plugin-react",
                     version: "^4.3.1",
                     mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "typescript",
-                    version: "^5.5.2",
-                    mod_type: DependenciesMod::Dev,
-                },
-            ],
-            (CodeLanguage::Js, pack::PackTool::Rsbuild, FrameWork::React) => vec![Dependency {
-                name: "@rsbuild/plugin-react",
-                version: "1.0.1-beta.1",
-                mod_type: DependenciesMod::Dev,
-            }],
-            (CodeLanguage::Ts, pack::PackTool::Rsbuild, FrameWork::React) => vec![
-                Dependency {
+                }],
+            (CodeLanguage::Ts, pack::PackTool::Vite, FrameWork::React) =>
+                vec![
+                    Dependency {
+                        name: "@vitejs/plugin-react",
+                        version: "^4.3.1",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "typescript",
+                        version: "^5.5.2",
+                        mod_type: DependenciesMod::Dev,
+                    }
+                ],
+            (CodeLanguage::Js, pack::PackTool::Rsbuild, FrameWork::React) =>
+                vec![Dependency {
                     name: "@rsbuild/plugin-react",
-                    version: "1.0.1-beta.1",
+                    version: "^1.0.7",
                     mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "typescript",
-                    version: "^5.5.2",
+                }],
+            (CodeLanguage::Ts, pack::PackTool::Rsbuild, FrameWork::React) =>
+                vec![
+                    Dependency {
+                        name: "@rsbuild/plugin-react",
+                        version: "^1.0.7",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "typescript",
+                        version: "^5.5.2",
+                        mod_type: DependenciesMod::Dev,
+                    }
+                ],
+            (_, pack::PackTool::Farm, FrameWork::React) =>
+                vec![Dependency {
+                    name: "@farmfe/plugin-react",
+                    version: "^1.2.0",
                     mod_type: DependenciesMod::Dev,
-                },
-            ],
-            (_, pack::PackTool::Farm, FrameWork::React) => vec![Dependency {
-                name: "@farmfe/plugin-react",
-                version: "^1.2.0",
-                mod_type: DependenciesMod::Dev,
-            }],
+                }],
             (_, pack::PackTool::Elza, FrameWork::React) => vec![],
         };
 
@@ -263,60 +272,62 @@ pub enum JsLoader {
 impl JsLoader {
     pub fn get_dependencies(&self) -> Vec<Dependency> {
         match self {
-            JsLoader::Babel => vec![
-                Dependency {
-                    name: "@babel/core",
-                    version: "^7.24.5",
-                    mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "@babel/plugin-transform-runtime",
-                    version: "^7.24.7",
-                    mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "@babel/preset-env",
-                    version: "^7.24.5",
-                    mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "@babel/preset-react",
-                    version: "^7.24.1",
-                    mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "@babel/runtime",
-                    version: "^7.24.7",
-                    mod_type: DependenciesMod::Prod,
-                },
-                Dependency {
-                    name: "babel-loader",
-                    version: "^9.1.3",
-                    mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "babel-plugin-auto-css-module",
-                    version: "1.0.0",
-                    mod_type: DependenciesMod::Dev,
-                },
-            ],
-            JsLoader::Swc => vec![
-                Dependency {
-                    name: "@swc/core",
-                    version: "1.6.6",
-                    mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "swc-loader",
-                    version: "0.2.6",
-                    mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "swc-plugin-auto-css-module",
-                    version: "0.0.9",
-                    mod_type: DependenciesMod::Dev,
-                },
-            ],
+            JsLoader::Babel =>
+                vec![
+                    Dependency {
+                        name: "@babel/core",
+                        version: "^7.24.5",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "@babel/plugin-transform-runtime",
+                        version: "^7.24.7",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "@babel/preset-env",
+                        version: "^7.24.5",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "@babel/preset-react",
+                        version: "^7.24.1",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "@babel/runtime",
+                        version: "^7.24.7",
+                        mod_type: DependenciesMod::Prod,
+                    },
+                    Dependency {
+                        name: "babel-loader",
+                        version: "^9.1.3",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "babel-plugin-auto-css-module",
+                        version: "1.0.0",
+                        mod_type: DependenciesMod::Dev,
+                    }
+                ],
+            JsLoader::Swc =>
+                vec![
+                    Dependency {
+                        name: "@swc/core",
+                        version: "1.6.6",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "swc-loader",
+                        version: "0.2.6",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "swc-plugin-auto-css-module",
+                        version: "0.0.9",
+                        mod_type: DependenciesMod::Dev,
+                    }
+                ],
             JsLoader::None => vec![],
         }
     }
@@ -347,60 +358,68 @@ pub enum CssPreset {
 impl CssPreset {
     pub fn get_dependencies(&self, build_tool: pack::PackTool) -> Vec<Dependency> {
         match (self, build_tool) {
-            (CssPreset::Sass, pack::PackTool::Webpack) => vec![
-                Dependency {
+            (CssPreset::Sass, pack::PackTool::Webpack) =>
+                vec![
+                    Dependency {
+                        name: "sass",
+                        version: "^1.77.6",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "sass-loader",
+                        version: "^14.2.1",
+                        mod_type: DependenciesMod::Dev,
+                    }
+                ],
+            (CssPreset::Less, pack::PackTool::Webpack) =>
+                vec![
+                    Dependency {
+                        name: "less",
+                        version: "^4.1.3",
+                        mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "less-loader",
+                        version: "^11.1.0",
+                        mod_type: DependenciesMod::Dev,
+                    }
+                ],
+            (CssPreset::Sass, pack::PackTool::Vite) =>
+                vec![Dependency {
                     name: "sass",
                     version: "^1.77.6",
                     mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "sass-loader",
-                    version: "^14.2.1",
-                    mod_type: DependenciesMod::Dev,
-                },
-            ],
-            (CssPreset::Less, pack::PackTool::Webpack) => vec![
-                Dependency {
+                }],
+            (CssPreset::Less, pack::PackTool::Vite) =>
+                vec![Dependency {
                     name: "less",
                     version: "^4.1.3",
                     mod_type: DependenciesMod::Dev,
-                },
-                Dependency {
-                    name: "less-loader",
-                    version: "^11.1.0",
+                }],
+            (CssPreset::Sass, pack::PackTool::Rsbuild) =>
+                vec![Dependency {
+                    name: "@rsbuild/plugin-sass",
+                    version: "^1.1.1",
                     mod_type: DependenciesMod::Dev,
-                },
-            ],
-            (CssPreset::Sass, pack::PackTool::Vite) => vec![Dependency {
-                name: "sass",
-                version: "^1.77.6",
-                mod_type: DependenciesMod::Dev,
-            }],
-            (CssPreset::Less, pack::PackTool::Vite) => vec![Dependency {
-                name: "less",
-                version: "^4.1.3",
-                mod_type: DependenciesMod::Dev,
-            }],
-            (CssPreset::Sass, pack::PackTool::Rsbuild) => vec![Dependency {
-                name: "@rsbuild/plugin-sass",
-                version: "1.0.1-beta.1",
-                mod_type: DependenciesMod::Dev,
-            }],
-            (CssPreset::Less, pack::PackTool::Rsbuild) => vec![Dependency {
-                name: "@rsbuild/plugin-less",
-                version: "1.0.1-beta.1",
-                mod_type: DependenciesMod::Dev,
-            }],
-            (CssPreset::Sass, pack::PackTool::Farm) => vec![Dependency {
-                name: "@farmfe/plugin-sass",
-                version: "^1.1.0",
-                mod_type: DependenciesMod::Dev,
-            }],
-            (CssPreset::Less, pack::PackTool::Farm) => vec![Dependency {
-                name: "@farmfe/js-plugin-less",
-                version: "^1.9.0",
-                mod_type: DependenciesMod::Dev,
-            }],
+                }],
+            (CssPreset::Less, pack::PackTool::Rsbuild) =>
+                vec![Dependency {
+                    name: "@rsbuild/plugin-less",
+                    version: "^1.1.0",
+                    mod_type: DependenciesMod::Dev,
+                }],
+            (CssPreset::Sass, pack::PackTool::Farm) =>
+                vec![Dependency {
+                    name: "@farmfe/plugin-sass",
+                    version: "^1.1.0",
+                    mod_type: DependenciesMod::Dev,
+                }],
+            (CssPreset::Less, pack::PackTool::Farm) =>
+                vec![Dependency {
+                    name: "@farmfe/js-plugin-less",
+                    version: "^1.11.0",
+                    mod_type: DependenciesMod::Dev,
+                }],
             (_, _) => vec![],
         }
     }

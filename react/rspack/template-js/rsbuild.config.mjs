@@ -1,15 +1,17 @@
 import { defineConfig } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
-`placeholder:0`
-import autoRoutesPlugin from 'webpack-plugin-auto-routes';
+`placeholder:0`;
+import AutoRoutesPlugin from 'webpack-plugin-auto-routes';
 
 export default defineConfig({
+  html: {
+    template: './public/index.html',
+  },
   tools: {
     rspack: {
       plugins: [
-        new autoRoutesPlugin({
-          routingMode: 'hash',
-          onlyRoutes: false,
+        new AutoRoutesPlugin({
+          mode: 'hash',
           indexPath: '/home',
         }),
       ],
