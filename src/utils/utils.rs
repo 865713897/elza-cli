@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{ BufReader, BufRead };
 use reqwest::Client;
 use console::style;
-use anyhow::Result;
+use anyhow::{ Context, Result };
 
 use super::logger;
 
@@ -59,13 +59,16 @@ pub async fn get_latest_version(name: &str) -> Result<String> {
     // 创建一个 reqwest 客户端
     let client = Client::new();
     let npm_registry = get_user_npm_registry();
-    let response = client.get(format!("{}{}", npm_registry, name)).send().await?;
+    let response = client
+        .get(format!("{}{}", npm_registry, name))
+        .send().await
+        .context(format!("error sending request url ({}{})", npm_registry, name))?;
     // 检查请求是否成功
     if response.status().is_success() {
         let body = response.text().await?;
         // 解析 JSON 响应，获取版本信息等
         let package_info: serde_json::Value = serde_json::from_str(&body)?;
-        let latest_version = package_info["dist-tags"]["latest"].as_str().unwrap_or("unknown");
+        let latest_version = package_info["dist-tags"]["latest"].as_str().unwrap_or("");
         return anyhow::Ok(latest_version.to_string());
     } else {
         return anyhow::Ok("".to_string());

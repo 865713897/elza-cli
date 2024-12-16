@@ -1,4 +1,4 @@
-use anyhow::{ Ok, Result };
+use anyhow::{ Ok as AnyhowOk, Result };
 use clap::ValueEnum;
 use console::style;
 use std::{ fmt, path::PathBuf, process::exit };
@@ -34,7 +34,7 @@ pub async fn create_project(
     // 如果这个目录已经存在
     if PathBuf::from(&project_name).exists() {
         logger::error(&format!("创建失败: {:#?} 已经存在！", &project_name));
-        return Ok(());
+        return AnyhowOk(());
     }
     logger::info("开始预设项目...");
 
@@ -69,11 +69,24 @@ pub async fn create_project(
             .map_err(|e| anyhow::anyhow!(e))
     });
 
-    let (latest_version_result, _) = join!(latest_version_future, config_future);
-    let latest_version = latest_version_result??;
+    let (_, latest_version_result) = join!(config_future, latest_version_future);
+    let latest_version = match latest_version_result {
+        Ok(inner_result) =>
+            match inner_result {
+                Ok(version) => version, // 内层 Result 是 Ok，获取 version
+                Err(e) => {
+                    logger::warning(&format!("获取最新版本失败: {}", e));
+                    "".to_string() // 内层 Result 是 Err，返回默认值
+                }
+            }
+        Err(_) => {
+            logger::warning(&format!("获取最新版本失败"));
+            "".to_string() // 如果任务本身失败，返回默认值
+        }
+    };
     utils::compare_versions(current_version, &latest_version);
     logger::ready("项目初始化完成");
-    Ok(())
+    AnyhowOk(())
 }
 
 // 框架选择
@@ -122,13 +135,13 @@ impl FrameWork {
 
 fn frame_selector(frame_work: Option<FrameWork>) -> Result<FrameWork> {
     match frame_work {
-        Some(frame) => Ok(frame),
+        Some(frame) => AnyhowOk(frame),
         None => {
             logger::pick("请选择项目框架");
             let items = vec!["react", "vue"];
             let selection = create_list(&items, 0)?;
             match selection {
-                0 => Ok(FrameWork::React),
+                0 => AnyhowOk(FrameWork::React),
                 _ => {
                     logger::error(&format!("暂不支持: {}", &items[selection]));
                     exit(1);
@@ -252,8 +265,8 @@ fn lang_selector() -> Result<CodeLanguage> {
     let items = vec!["typescript", "javascript"];
     let selection = create_list(&items, 0)?;
     match selection {
-        0 => Ok(CodeLanguage::Ts),
-        1 => Ok(CodeLanguage::Js),
+        0 => AnyhowOk(CodeLanguage::Ts),
+        1 => AnyhowOk(CodeLanguage::Js),
         _ => {
             logger::error("暂不支持");
             exit(1);
@@ -338,8 +351,8 @@ fn js_loader_selector() -> Result<JsLoader> {
     let items = vec!["babel-loader", "swc-loader"];
     let selection = create_list(&items, 0)?;
     match selection {
-        0 => Ok(JsLoader::Babel),
-        1 => Ok(JsLoader::Swc),
+        0 => AnyhowOk(JsLoader::Babel),
+        1 => AnyhowOk(JsLoader::Swc),
         _ => {
             logger::error(&format!("暂不支持{}", &items[selection]));
             exit(1);
@@ -430,8 +443,8 @@ pub fn css_selector() -> Result<CssPreset> {
     let items = vec!["sass", "less", "styled-components"];
     let selection = create_list(&items, 0)?;
     match selection {
-        0 => Ok(CssPreset::Sass),
-        1 => Ok(CssPreset::Less),
+        0 => AnyhowOk(CssPreset::Sass),
+        1 => AnyhowOk(CssPreset::Less),
         _ => {
             logger::error(&format!("暂不支持: {}", &items[selection]));
             exit(1);
