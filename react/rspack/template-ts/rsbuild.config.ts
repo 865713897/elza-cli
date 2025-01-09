@@ -9,11 +9,7 @@ export default defineConfig({
   tools: {
     rspack: {
       plugins: [
-        new AutoRoutesPlugin({
-          routingMode: 'browser',
-          onlyRoutes: false,
-          indexPath: '/home',
-        }),
+        new AutoRoutesPlugin({dir: './src/pages', moduleType: 'tsx'}),
       ],
     },
   },

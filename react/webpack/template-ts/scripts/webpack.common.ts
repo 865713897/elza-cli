@@ -4,7 +4,7 @@ import { Configuration as DevServerConfiguration } from 'webpack-dev-server';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import CopyPlugin from 'copy-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import AutoRoutePlugin from 'webpack-plugin-auto-routes';
+import AutoRoutesPlugin from 'webpack-plugin-auto-routes';
 import BetterInfoPlugin from 'webpack-plugin-better-info';
 
 interface WebpackDevServerConfiguration {
@@ -125,10 +125,7 @@ const baseConfig: WebpackConfiguration = {
       template: path.resolve(__dirname, '../public/index.html'),
       inject: true,
     }),
-    new AutoRoutePlugin({
-      routingMode: 'hash',
-      indexPath: '/home',
-    }),
+    new AutoRoutesPlugin({dir: './src/pages', moduleType: 'jsx'}),
     new DefinePlugin({
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
     }),

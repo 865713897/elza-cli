@@ -208,15 +208,15 @@ impl CodeLanguage {
                 ],
             (CodeLanguage::Js, pack::PackTool::Vite, FrameWork::React) =>
                 vec![Dependency {
-                    name: "@vitejs/plugin-react",
-                    version: "^4.3.1",
+                    name: "@vitejs/plugin-react-swc",
+                    version: "^3.5.0",
                     mod_type: DependenciesMod::Dev,
                 }],
             (CodeLanguage::Ts, pack::PackTool::Vite, FrameWork::React) =>
                 vec![
                     Dependency {
-                        name: "@vitejs/plugin-react",
-                        version: "^4.3.1",
+                        name: "@vitejs/plugin-react-swc",
+                        version: "^3.5.0",
                         mod_type: DependenciesMod::Dev,
                     },
                     Dependency {

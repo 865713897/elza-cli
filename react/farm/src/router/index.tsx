@@ -1,6 +1,6 @@
 import React from 'react';
 import { HashRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { getRoutes } from 'virtual-routes';
+import { getRoutes } from 'virtual:routes';
 
 interface RouteConfig {
   id: string;

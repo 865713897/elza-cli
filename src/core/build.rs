@@ -1,15 +1,15 @@
-use anyhow::{ Ok, Result };
-use rust_embed::{ EmbeddedFile, RustEmbed };
+use anyhow::{Ok, Result};
+use rust_embed::{EmbeddedFile, RustEmbed};
 use std::path::PathBuf;
-use std::process::{ exit, Command, Stdio };
-use std::{ fs, vec };
+use std::process::{exit, Command, Stdio};
+use std::{fs, vec};
 
-use crate::utils::error::{ handle_option, handle_result };
+use crate::utils::error::{handle_option, handle_result};
 use crate::utils::logger;
 
-use super::cli::{ CodeLanguage, CssPreset, Dependency, FrameWork, JsLoader };
+use super::cli::{CodeLanguage, CssPreset, Dependency, FrameWork, JsLoader};
 use super::pack::PackTool;
-use super::package_json::{ PackageBasicInfo, PackageJson };
+use super::package_json::{PackageBasicInfo, PackageJson};
 
 #[derive(Clone, Copy)]
 pub struct InlineConfig {
@@ -146,14 +146,16 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
     let project_dir = PathBuf::from(project_name);
     create_project_dir(&project_dir)?;
     // 获取项目类型
-    let (project_type, template_type) = get_project_type(
-        config.pack_tool,
-        config.frame,
-        config.lang
-    );
+    let (project_type, template_type) =
+        get_project_type(config.pack_tool, config.frame, config.lang);
 
     // 复制特定模板文件
-    copy_template_files(&project_dir, template_type, config.clone(), CopyType::Template)?;
+    copy_template_files(
+        &project_dir,
+        template_type,
+        config.clone(),
+        CopyType::Template,
+    )?;
 
     // 复制公共文件
     copy_common_files(&project_dir, config, CopyType::Common)?;
@@ -186,7 +188,7 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
         config.loader.get_dependencies(),
         // config.state.get_dependencies(),
         // config.ui.get_dependencies(),
-        config.css.get_dependencies(config.pack_tool)
+        config.css.get_dependencies(config.pack_tool),
     ];
     let flatten_deps: Vec<Dependency> = deps.into_iter().flatten().collect();
     for dep in flatten_deps {
@@ -198,13 +200,24 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
     pj.write()?;
     logger::info("预设依赖项添加完成");
     git_init(&project_dir)?;
-    if config.pack_tool == PackTool::Webpack || config.pack_tool == PackTool::Rsbuild {
-        logger::full_info(
-            &format!(
-                "[你知道吗？] {:?}模板内置约定式路由插件，依赖安装完成启动项目即可生成路由文件，详见 https://github.com/865713897/webpack-plugin-auto-routes",
-                config.pack_tool
-            )
-        );
+    match config.pack_tool {
+        PackTool::Webpack | PackTool::Rsbuild => {
+            logger::full_info(
+                &format!(
+                    "[你知道吗？] {:?}模板内置约定式路由插件，依赖安装完成启动项目即可生成路由文件，详见 https://github.com/865713897/webpack-plugin-auto-routes#readme",
+                    config.pack_tool
+                )
+            );
+        }
+        PackTool::Farm => {
+            logger::full_info(
+                &format!(
+                    "[你知道吗？] {:?}模板内置约定式路由插件，依赖安装完成启动项目即可生成路由文件，详见 https://github.com/865713897/farm-plugin-auto-routes#readme",
+                    config.pack_tool
+                )
+            );
+        }
+        _ => {}
     }
     Ok(())
 }
@@ -213,27 +226,36 @@ pub fn start(project_name: &str, config: InlineConfig) -> Result<()> {
 fn get_project_type(
     pack_tool: PackTool,
     frame: FrameWork,
-    lang: CodeLanguage
+    lang: CodeLanguage,
 ) -> (ProjectType, TemplateType) {
     match (pack_tool, frame, lang) {
-        (PackTool::Webpack, FrameWork::React, CodeLanguage::Js) =>
-            (ProjectType::WebpackReactJs, TemplateType::WebpackReactJsDir),
-        (PackTool::Webpack, FrameWork::React, CodeLanguage::Ts) =>
-            (ProjectType::WebpackReactTs, TemplateType::WebpackReactTsDir),
-        (PackTool::Vite, FrameWork::React, CodeLanguage::Js) =>
-            (ProjectType::ViteReactJs, TemplateType::ViteReactJsDir),
-        (PackTool::Vite, FrameWork::React, CodeLanguage::Ts) =>
-            (ProjectType::ViteReactTs, TemplateType::ViteReactTsDir),
-        (PackTool::Rsbuild, FrameWork::React, CodeLanguage::Js) =>
-            (ProjectType::RspackReactJs, TemplateType::RspackReactJsDir),
-        (PackTool::Rsbuild, FrameWork::React, CodeLanguage::Ts) =>
-            (ProjectType::RspackReactTs, TemplateType::RspackReactTsDir),
-        (PackTool::Farm, FrameWork::React, _) =>
-            (ProjectType::FarmReact, TemplateType::FarmReactDir),
-        (PackTool::Elza, FrameWork::React, CodeLanguage::Js) =>
-            (ProjectType::ElzaReactJs, TemplateType::ElzaReactJsDir),
-        (PackTool::Elza, FrameWork::React, CodeLanguage::Ts) =>
-            (ProjectType::ElzaReactTs, TemplateType::ElzaReactTsDir),
+        (PackTool::Webpack, FrameWork::React, CodeLanguage::Js) => {
+            (ProjectType::WebpackReactJs, TemplateType::WebpackReactJsDir)
+        }
+        (PackTool::Webpack, FrameWork::React, CodeLanguage::Ts) => {
+            (ProjectType::WebpackReactTs, TemplateType::WebpackReactTsDir)
+        }
+        (PackTool::Vite, FrameWork::React, CodeLanguage::Js) => {
+            (ProjectType::ViteReactJs, TemplateType::ViteReactJsDir)
+        }
+        (PackTool::Vite, FrameWork::React, CodeLanguage::Ts) => {
+            (ProjectType::ViteReactTs, TemplateType::ViteReactTsDir)
+        }
+        (PackTool::Rsbuild, FrameWork::React, CodeLanguage::Js) => {
+            (ProjectType::RspackReactJs, TemplateType::RspackReactJsDir)
+        }
+        (PackTool::Rsbuild, FrameWork::React, CodeLanguage::Ts) => {
+            (ProjectType::RspackReactTs, TemplateType::RspackReactTsDir)
+        }
+        (PackTool::Farm, FrameWork::React, _) => {
+            (ProjectType::FarmReact, TemplateType::FarmReactDir)
+        }
+        (PackTool::Elza, FrameWork::React, CodeLanguage::Js) => {
+            (ProjectType::ElzaReactJs, TemplateType::ElzaReactJsDir)
+        }
+        (PackTool::Elza, FrameWork::React, CodeLanguage::Ts) => {
+            (ProjectType::ElzaReactTs, TemplateType::ElzaReactTsDir)
+        }
     }
 }
 
@@ -249,10 +271,15 @@ fn create_project_dir(project_dir: &PathBuf) -> Result<()> {
 fn copy_common_files(
     project_dir: &PathBuf,
     config: InlineConfig,
-    copy_type: CopyType
+    copy_type: CopyType,
 ) -> Result<()> {
     // 复制通用文件
-    copy_template_files(project_dir, TemplateType::CommonDir, config, copy_type.clone())?;
+    copy_template_files(
+        project_dir,
+        TemplateType::CommonDir,
+        config,
+        copy_type.clone(),
+    )?;
     // 根据不同模板类型复制不同文件
     let common_react_dir = match config.lang {
         CodeLanguage::Js => TemplateType::CommonReactJsDir,
@@ -267,7 +294,7 @@ fn copy_template_files(
     project_dir: &PathBuf,
     template_type: TemplateType,
     config: InlineConfig,
-    copy_type: CopyType
+    copy_type: CopyType,
 ) -> Result<()> {
     for filename in template_type.iter_files() {
         if should_skip_file(&filename, config, copy_type.clone()) {
@@ -282,15 +309,24 @@ fn copy_template_files(
 fn should_skip_file(filename: &str, config: InlineConfig, copy_type: CopyType) -> bool {
     match config.pack_tool {
         PackTool::Webpack => {
-            (config.loader == JsLoader::Babel && filename.contains(".swcrc")) ||
-                (config.loader == JsLoader::Swc && filename.contains("babel.config.json"))
+            (config.loader == JsLoader::Babel && filename.contains(".swcrc"))
+                || (config.loader == JsLoader::Swc && filename.contains("babel.config.json"))
+                || (copy_type == CopyType::Common && filename.contains("src/index"))
         }
-        PackTool::Rsbuild => copy_type == CopyType::Common && filename.contains("src/index"),
-        PackTool::Farm | PackTool::Vite =>
-            copy_type == CopyType::Common &&
-                (filename.contains("src/index") ||
-                    filename.contains("public/index.html") ||
-                    filename.contains("src/router")),
+        // PackTool::Rsbuild => copy_type == CopyType::Common && filename.contains("src/index"),
+        PackTool::Farm => {
+            copy_type == CopyType::Common
+                && (filename.contains("public/index.html")
+                    || filename.contains("src/router")
+                    || filename.contains("typings"))
+        }
+        PackTool::Vite => {
+            copy_type == CopyType::Common
+                && (filename.contains("src/index")
+                    || filename.contains("public/index.html")
+                    || filename.contains("src/router")
+                    || filename.contains("typings"))
+        }
         _ => false,
     }
 }
@@ -299,11 +335,11 @@ fn should_skip_file(filename: &str, config: InlineConfig, copy_type: CopyType) -
 fn copy_template_file(
     project_dir: &PathBuf,
     filename: &str,
-    template_type: TemplateType
+    template_type: TemplateType,
 ) -> Result<()> {
     let file_content = handle_option(
         template_type.get_file_content(filename),
-        &format!("获取模板文件内容失败: {}", filename)
+        &format!("获取模板文件内容失败: {}", filename),
     );
 
     let file_path = project_dir.join(filename);
@@ -312,11 +348,11 @@ fn copy_template_file(
     logger::event(&format!("开始创建文件: {}", filename));
     handle_result(
         fs::create_dir_all(directory_path),
-        &format!("创建目录失败: {:?}", directory_path)
+        &format!("创建目录失败: {:?}", directory_path),
     );
     handle_result(
         fs::write(&file_path, file_content.data),
-        &format!("写入文件失败: {:?}", file_path)
+        &format!("写入文件失败: {:?}", file_path),
     );
     Ok(())
 }
@@ -367,10 +403,14 @@ fn update_rsbuild_config(project_dir: &PathBuf, config: InlineConfig) -> Result<
         CodeLanguage::Ts => "rsbuild.config.ts",
     };
     let replace_vec = match config.css {
-        CssPreset::Sass =>
-            vec!["\nimport { pluginSass } from '@rsbuild/plugin-sass';", "pluginSass()"],
-        CssPreset::Less =>
-            vec!["\nimport { pluginLess } from '@rsbuild/plugin-less';", "pluginLess()"],
+        CssPreset::Sass => vec![
+            "\nimport { pluginSass } from '@rsbuild/plugin-sass';",
+            "pluginSass()",
+        ],
+        CssPreset::Less => vec![
+            "\nimport { pluginLess } from '@rsbuild/plugin-less';",
+            "pluginLess()",
+        ],
         _ => vec![],
     };
     update_config_file(project_dir, file_name, replace_vec)
@@ -390,7 +430,7 @@ fn update_farm_config(project_dir: &PathBuf, config: InlineConfig) -> Result<()>
 fn update_config_file(
     project_dir: &PathBuf,
     file_name: &str,
-    replace_vec: Vec<&str>
+    replace_vec: Vec<&str>,
 ) -> Result<()> {
     let mut path = project_dir.clone();
     path.push(file_name);

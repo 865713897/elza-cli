@@ -1,6 +1,6 @@
 import React from 'react';
 import { HashRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { getRoutes } from './routes';
+import { getRoutes } from 'virtual-routes';
 
 export default function AppRouter() {
   const { routes, routeComponents } = getRoutes();

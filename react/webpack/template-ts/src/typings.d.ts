@@ -15,6 +15,22 @@ declare interface NodeModule {
   };
 }
 
+declare module 'virtual-routes' {
+  export const getRoutes: () => {
+    routes: Record<
+      string,
+      {
+        id: string;
+        parentId?: string;
+        path: string;
+        isLayout?: boolean;
+        [key: string]: any;
+      }
+    >;
+    routeComponents: Record<string, React.ComponentType<any>>;
+  };
+}
+
 declare module '*.scss' {
   const content: { [key: string]: string };
   export = content;

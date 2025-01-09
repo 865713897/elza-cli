@@ -36,7 +36,7 @@ impl PackTool {
                 vec![
                     Dependency {
                         name: "webpack-plugin-auto-routes",
-                        version: "1.0.6",
+                        version: "1.1.0",
                         mod_type: DependenciesMod::Dev,
                     },
                     Dependency {
@@ -130,7 +130,7 @@ impl PackTool {
                     },
                     Dependency {
                         name: "webpack-plugin-auto-routes",
-                        version: "1.0.6",
+                        version: "1.1.0",
                         mod_type: DependenciesMod::Dev,
                     }
                 ],
@@ -160,6 +160,11 @@ impl PackTool {
                         name: "react-refresh",
                         version: "^0.14.0",
                         mod_type: DependenciesMod::Dev,
+                    },
+                    Dependency {
+                        name: "farm-plugin-auto-routes",
+                        version: "^0.0.3",
+                        mod_type: DependenciesMod::Dev,
                     }
                 ],
             PackTool::Elza =>
@@ -177,14 +182,14 @@ pub fn pack_tool_selector(template: Option<PackTool>) -> Result<PackTool> {
         Some(t) => Ok(t),
         None => {
             logger::pick("请选择打包工具");
-            let items = vec!["elza", "webpack", "vite", "rsbuild", "farm"];
+            let items = vec!["farm", "rsbuild", "vite", "webpack"];
             let selection = create_list(&items, 0)?;
             match selection {
-                0 => Ok(PackTool::Elza),
-                1 => Ok(PackTool::Webpack),
+                0 => Ok(PackTool::Farm),
+                1 => Ok(PackTool::Rsbuild),
                 2 => Ok(PackTool::Vite),
-                3 => Ok(PackTool::Rsbuild),
-                4 => Ok(PackTool::Farm),
+                3 => Ok(PackTool::Webpack),
+                // 4 => Ok(PackTool::Elza),
                 _ => {
                     logger::error(&format!("暂不支持: {}", &items[selection]));
                     exit(1);

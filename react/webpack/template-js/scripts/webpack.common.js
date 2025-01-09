@@ -2,7 +2,7 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const AutoRoutePlugin = require('webpack-plugin-auto-routes');
+const AutoRoutesPlugin = require('webpack-plugin-auto-routes');
 const BetterInfoPlugin = require('webpack-plugin-better-info');
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -117,10 +117,7 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, '../public/index.html'),
     }),
-    new AutoRoutePlugin({
-      routingMode: 'hash',
-      indexPath: '/home',
-    }),
+    new AutoRoutesPlugin({dir: './src/pages', moduleType: 'jsx'}),
     new CopyPlugin({
       patterns: [
         {
