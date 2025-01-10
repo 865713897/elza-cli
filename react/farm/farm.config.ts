@@ -5,6 +5,6 @@ export default defineConfig({
   plugins: [
     '@farmfe/plugin-react',
     `placeholder:1`,
-    farmAutoRoutes({ dirs: 'src/pages', writeToDisk: true }),
+    farmAutoRoutes({ writeToDisk: true }),
   ],
 });
