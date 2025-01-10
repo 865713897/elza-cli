@@ -322,8 +322,7 @@ fn should_skip_file(filename: &str, config: InlineConfig, copy_type: CopyType) -
         }
         PackTool::Vite => {
             copy_type == CopyType::Common
-                && (filename.contains("src/index")
-                    || filename.contains("public/index.html")
+                && (filename.contains("public/index.html")
                     || filename.contains("src/router")
                     || filename.contains("typings"))
         }
