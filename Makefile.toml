@@ -1,0 +1,40 @@
+[tasks.build-darwin-arm64]
+script_runner = "bash"
+script = [
+  'cargo build --release --target=aarch64-apple-darwin',
+  'mkdir -p ./npm/@elza-cli/darwin-arm64/bin',
+  'mv ./target/aarch64-apple-darwin/release/elza-cli ./npm/@elza-cli/darwin-arm64/bin/elza-cli',
+]
+
+[tasks.build-win32-x64]
+script_runner = "bash"
+script = [
+  'cargo build --release --target=x86_64-pc-windows-gnu',
+  'mkdir -p ./npm/@elza-cli/win32-x64/bin',
+  'mv ./target/x86_64-pc-windows-gnu/release/elza-cli.exe ./npm/@elza-cli/win32-x64/bin/elza-cli.exe',
+]
+
+[tasks.build-linux-x64]
+script_runner = "bash"
+script = [
+  'cargo build --release --target=x86_64-unknown-linux-gnu',
+  'mkdir -p ./npm/@elza-cli/linux-x64/bin',
+  'mv ./target/x86_64-unknown-linux-gnu/release/elza-cli ./npm/@elza-cli/linux-x64/bin/elza-cli',
+]
+
+[tasks.update-version]
+script = ["node ./scripts/update-version.js"]
+
+[tasks.build-all]
+script_runner = "bash"
+script = ["cargo make build-darwin-arm64", "cargo make build-win32-x64"]
+
+[tasks.publish-packages]
+script = ["node ./scripts/publish-npm-packages.js"]
+
+[tasks.start]
+script = [
+  "cargo make update-version",
+  "cargo make build-all",
+  "cargo make publish-packages",
+]
